@@ -1,0 +1,2 @@
+---
+terraform_directory: ""  # override this in playbook or inventory

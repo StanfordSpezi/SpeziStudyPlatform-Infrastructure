@@ -1,0 +1,16 @@
+directory: charts
+repositories:
+- name: stable
+  url: https://charts.helm.sh/stable
+- name: bitnami
+  url: https://charts.bitnami.com/bitnami
+- name: traefik
+  url: https://traefik.github.io/charts
+requires:
+- chart: bitnami/keycloak
+  version: 25.1.1
+- chart: bitnami/oauth2-proxy
+  version: 8.0.2
+- chart: traefik/traefik
+  version: 37.0.0
+version: 1

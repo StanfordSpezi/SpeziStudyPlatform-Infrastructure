@@ -1,0 +1,18 @@
+spezi_service_name: spezistudyplatform
+
+# Create a GCP service account: https://console.cloud.google.com/iam-admin/serviceaccounts/create
+# w/ permission: Kubernetes Engine Admin
+# Create and export the credentials/Keys file, then set the path to it here. 
+gcp_credentials_file: "/home/riccardo/Development/spezi-study-platform-infrastructure/gcp-service-account-key.json"
+
+spezi_service_gcp_project_id: spezistudyplatform-dev
+
+# Fully Qualified Domain Name that the service will be deployed to
+spezi_service_fqdn: platform.spezi.stanford.edu
+
+# Static IP (if it already exists) for the service:
+# for now, get this from GCP after the terraform steps and insert it here manually before doing the kube provisioning. 
+spezi_service_static_ip: 34.168.138.135
+
+spezi_service_admin_email: replace-me@stanford.edu
+spezi_service_repo_url: "https://github.com/StanfordSpezi/spezi-study-platform-infrastructure.git"
