@@ -1,0 +1,7 @@
+{
+  "apiServer": "https://34.168.138.135",
+  "namespace": "argocd",
+  "applyStrategy": "server",
+  "diffStrategy": "server",
+  "injectLabels": false
+}
