@@ -39,24 +39,25 @@
       },
 
       backend_config: k.core.v1.configMap.new('spezistudyplatform-backend-config', {
-        PORT: '3003',
-        MODE: std.get(config, 'mode', 'DEV'),
-        ALLOWED_ORIGINS: "('https://" + config.domain + "', 'http://" + config.domain + "'),http://127.0.0.1,http://localhost:5173",
-        AUTH_URL: 'https://' + config.domain + '/auth',
-        OAUTH_REALM: 'spezistudyplatform',
-        OAUTH_CLIENT_ID: 'spezistudyplatform',
-        DB_HOST: 'spezistudyplatform-db-rw',
-        DB_NAME: 'spezistudyplatform',
-      })
+        KEYCLOAK_URL: 'http://keycloak.' + config.namespace + '.svc.cluster.local/auth',
+        KEYCLOAK_REALM: 'spezistudyplatform',
+        KEYCLOAK_CLIENT_ID: 'spezistudyplatform-server',
+        KEYCLOAK_RESEARCHER_ROLE: 'spezistudyplatform-researcher',
+        KEYCLOAK_PARTICIPANT_ROLE: 'spezistudyplatform-participant',
+        DATABASE_HOST: 'spezistudyplatform-db-rw',
+        DATABASE_NAME: 'spezistudyplatform',
+      } + (if std.get(config, 'mode', 'DEV') == 'PRODUCTION' then {
+        VAPOR_ENV: 'production',
+      } else {}))
       + k.core.v1.configMap.metadata.withNamespace(config.namespace),
 
       backend_deployment: k.apps.v1.deployment.new(
         name='spezistudyplatform-backend',
         replicas=1,
         containers=[
-          k.core.v1.container.new('spezistudyplatform-backend-container', 'traefik/whoami:latest')
+          k.core.v1.container.new('spezistudyplatform-backend-container', 'ghcr.io/stanfordspezi/spezistudyplatform-server:' + config.backendImageTag)
           + k.core.v1.container.withImagePullPolicy('Always')
-          + k.core.v1.container.withPorts([k.core.v1.containerPort.new(3000)])
+          + k.core.v1.container.withPorts([k.core.v1.containerPort.new(8080)])
           + k.core.v1.container.resources.withLimits({
             memory: '2Gi',
             cpu: '1',
@@ -65,9 +66,9 @@
             k.core.v1.envFromSource.configMapRef.withName('spezistudyplatform-backend-config'),
           ])
           + k.core.v1.container.withEnv([
-            k.core.v1.envVar.fromSecretRef('DB_USER', 'spezistudyplatform-postgres-credentials', 'username'),
-            k.core.v1.envVar.fromSecretRef('DB_PASSWORD', 'spezistudyplatform-postgres-credentials', 'password'),
-            k.core.v1.envVar.fromSecretRef('OAUTH_CLIENT_SECRET', 'spezistudyplatform-backend-secret', 'OAUTH_CLIENT_SECRET'),
+            k.core.v1.envVar.fromSecretRef('DATABASE_USERNAME', 'spezistudyplatform-postgres-credentials', 'username'),
+            k.core.v1.envVar.fromSecretRef('DATABASE_PASSWORD', 'spezistudyplatform-postgres-credentials', 'password'),
+            k.core.v1.envVar.fromSecretRef('KEYCLOAK_CLIENT_SECRET', 'spezistudyplatform-backend-secret', 'OAUTH_CLIENT_SECRET'),
           ]),
         ]
       )
@@ -80,7 +81,7 @@
       backend_service: k.core.v1.service.new(
         'spezistudyplatform-backend-service',
         { app: 'spezistudyplatform-backend' },
-        [k.core.v1.servicePort.new(3000, 3000)]
+        [k.core.v1.servicePort.new(8080, 8080) + k.core.v1.servicePort.withName('http')]
       )
       + k.core.v1.service.metadata.withNamespace(config.namespace),
     }

@@ -50,7 +50,7 @@
         'spezistudyplatform-frontend',
         1,
         [
-          k.core.v1.container.new('spezistudyplatform-frontend-container', 'traefik/whoami:latest')
+          k.core.v1.container.new('spezistudyplatform-frontend-container', 'ghcr.io/stanfordspezi/spezistudyplatform-web:' + config.frontendImageTag)
           + k.core.v1.container.withImagePullPolicy('Always')
           + k.core.v1.container.withPorts([k.core.v1.containerPort.new(80)])
           + k.core.v1.container.resources.withLimits({ memory: '1Gi', cpu: '100m' })

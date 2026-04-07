@@ -8,6 +8,8 @@ function(staticIP='34.168.138.135') {
     loadBalancerIP: null, // Optional, set by environment if needed
     mode: 'PRODUCTION', // Default to production mode
     caCrt: null, // Must be set by environment
+    frontendImageTag: 'latest', // Override per environment or deployment
+    backendImageTag: 'latest', // Override per environment or deployment
     
     // External Secrets configuration (disabled by default)
     externalSecrets: {
@@ -44,6 +46,8 @@ function(staticIP='34.168.138.135') {
     loadBalancerIP: ip,
     storageClass: 'standard',
     mode: 'DEV',
+    frontendImageTag: 'pr-123',
+    backendImageTag: 'pr-17',
     externalSecrets+: {
       enabled: true,
       provider: 'vault',
