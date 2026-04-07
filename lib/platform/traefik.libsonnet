@@ -179,13 +179,13 @@
               ],
             },
             {
-              match: 'Host(`' + config.domain + '`) && PathPrefix(`/backend`)',
+              match: 'Host(`' + config.domain + '`) && PathPrefix(`/api`)',
               priority: 2,
               kind: 'Rule',
               services: [
                 {
                   name: config.namespace + '-backend-service',
-                  port: 3000,
+                  port: 8080,
                 },
               ],
               middlewares: [
