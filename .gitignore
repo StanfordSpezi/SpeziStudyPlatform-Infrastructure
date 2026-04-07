@@ -20,4 +20,8 @@ __pycache__/
 .mypy_cache/
 .coverage
 .kind-kubeconfig
+.local-repos/
 import.log
+
+.DS_Store
+*.DS_Store

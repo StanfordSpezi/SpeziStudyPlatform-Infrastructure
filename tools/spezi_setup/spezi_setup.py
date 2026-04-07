@@ -278,7 +278,16 @@ class EnvironmentSetupBase:
         cm_path = self.script_dir / "config" / "argocd" / "argocd-cm-config.yaml"
         self.runner.run(["kubectl", "apply", "-f", str(cm_path)])
         logging.info("Giving Argo CD resources a moment to settle...")
-        time.sleep(5)
+        wait_for_condition(
+            "argocd pods to be scheduled",
+            timeout_seconds=120,
+            interval=2,
+            check_fn=lambda: self.runner.run(
+                ["kubectl", "get", "pods", "-n", "argocd", "--no-headers"],
+                capture_output=True, check=False,
+            ).stdout.strip() != "",
+            raise_on_timeout=True,
+        )
         self.runner.run(
             [
                 "kubectl",
@@ -590,6 +599,7 @@ class LocalEnvironmentSetup(EnvironmentSetupBase):
         finally:
             self.cleanup()
 
+
     def setup(self):
         self.ensure_binary("kind")
         self.ensure_binary("kubectl")
@@ -699,15 +709,15 @@ class LocalEnvironmentSetup(EnvironmentSetupBase):
                 ["local-dev-namespace", "local-dev-cloudnative-pg-crds"],
                 "wave 0 applications",
             ),
-            timeout=600,
+            timeout=100,
         )
         self.wait_for_applications(
             WaveSpec(["local-dev-auth"], "wave 2 applications"),
-            timeout=600,
+            timeout=10,
         )
         self.wait_for_applications(
             WaveSpec(["local-dev-argocd"], "Argo CD application"),
-            timeout=600,
+            timeout=100,
         )
 
     def determine_frontend_url(self) -> str:
@@ -758,8 +768,6 @@ class LocalEnvironmentSetup(EnvironmentSetupBase):
             f"frontend_url={frontend_url}",
             "-var",
             f"gcp_project_id={self.gcp_project_id}",
-            "-var",
-            "enable_google_sso=false",
             "-var",
             "enable_vault_secret_sync=false",
             "-var",
@@ -891,7 +899,10 @@ class LocalEnvironmentSetup(EnvironmentSetupBase):
             "access: Main App       -> https://%s", domain
         )
         logging.info(
-            "access: Keycloak Admin -> https://%s/admin", domain
+            "access: Backend        -> https://%s/api", domain
+        )
+        logging.info(
+            "access: Keycloak Admin -> https://%s/auth/admin", domain
         )
         
 
@@ -1086,6 +1097,37 @@ class ProductionEnvironmentSetup(EnvironmentSetupBase):
             f"kubectl create secret generic gcp-sa-key --from-file=secret-access-credentials={self.credentials_file} -n external-secrets-system --dry-run=client -o yaml | kubectl apply -f -"
         )
 
+    def _fetch_google_sso_secrets(self) -> Tuple[str, str]:
+        """Fetch Google SSO client credentials from GCP Secret Manager via gcloud."""
+        client_id = ""
+        client_secret = ""
+        for secret_name, label in [
+            ("keycloak-google-sso-client-id", "client ID"),
+            ("keycloak-google-sso-client-secret", "client secret"),
+        ]:
+            result = self.runner.run(
+                [
+                    "gcloud", "secrets", "versions", "access", "latest",
+                    f"--secret={secret_name}",
+                    f"--project={self.project_id}",
+                ],
+                capture_output=True,
+                check=False,
+            )
+            value = (result.stdout or "").strip()
+            if result.returncode != 0 or not value:
+                logging.warning(
+                    "Could not fetch Google SSO %s from Secret Manager; Google IDP will be skipped.",
+                    label,
+                )
+                return "", ""
+            if secret_name.endswith("client-id"):
+                client_id = value
+            else:
+                client_secret = value
+        logging.info("Fetched Google SSO credentials from Secret Manager.")
+        return client_id, client_secret
+
     def bootstrap_keycloak(self) -> str:
         logging.info("Bootstrapping Keycloak realm for production...")
         self.start_port_forward("spezistudyplatform", "svc/keycloak", "8081:80")
@@ -1104,6 +1146,7 @@ class ProductionEnvironmentSetup(EnvironmentSetupBase):
                 username = ""
             self.keycloak_admin_user = username or "user"
         logging.info("Using Keycloak admin username: %s", self.keycloak_admin_user)
+        google_client_id, google_client_secret = self._fetch_google_sso_secrets()
         tf_dir = self.script_dir / "tofu" / "keycloak-bootstrap" / "tf"
         backend_file = tf_dir / "backend-prod.tf"
         backend_file.write_text("terraform {\n  backend \"gcs\" {}\n}\n")
@@ -1113,7 +1156,8 @@ class ProductionEnvironmentSetup(EnvironmentSetupBase):
             "TF_VAR_keycloak_client_id": "admin-cli",
             "TF_VAR_keycloak_url": self.keycloak_base_url,
             "TF_VAR_gcp_project_id": self.project_id,
-            "TF_VAR_enable_google_sso": "true",
+            "TF_VAR_google_oauth_client_id": google_client_id,
+            "TF_VAR_google_oauth_client_secret": google_client_secret,
             "TF_VAR_create_test_users": "false",
         }
         try:
@@ -1137,7 +1181,6 @@ class ProductionEnvironmentSetup(EnvironmentSetupBase):
                     f"-var=keycloak_url={self.keycloak_base_url}",
                     f"-var=frontend_url=https://{self.production_domain}",
                     f"-var=gcp_project_id={self.project_id}",
-                    "-var=enable_google_sso=true",
                     "-auto-approve",
                 ],
                 cwd=tf_dir,
@@ -1391,7 +1434,6 @@ def build_parser() -> argparse.ArgumentParser:
             f"(default: {LOCAL_DEFAULTS['gcp_project_id'] or 'env/auto-detect'})"
         ),
     )
-
     prod_parser = subparsers.add_parser("prod", help="Provision or tear down production infrastructure")
     prod_parser.add_argument(
         "--action",

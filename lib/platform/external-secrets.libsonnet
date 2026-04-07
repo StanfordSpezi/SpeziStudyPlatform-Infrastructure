@@ -114,7 +114,7 @@
                     command: [
                       'sh',
                       '-c',
-                      'sleep 10 && (vault kv get secret/spezistudyplatform-backend >/dev/null 2>&1 || vault kv put secret/spezistudyplatform-backend OAUTH_CLIENT_SECRET=Tmd2RUFQcFJaTzA5MENWcDEybHdNUDFyVzVDcTdJQ2EK) || true',
+                      'sleep 10 && (vault kv get secret/spezistudyplatform-backend >/dev/null 2>&1 || vault kv put secret/spezistudyplatform-backend OAUTH_CLIENT_SECRET=change-me-in-production) || true',
                     ],
                     env: [
                       {

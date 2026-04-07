@@ -1,9 +1,9 @@
 # =======================================================================================
-# MANUAL ACTION REQUIRED
+# MANUAL ACTION REQUIRED (Production only)
 # =======================================================================================
 # The Google Cloud Terraform provider does not support creating OAuth 2.0 Client IDs
 # for web applications directly. You must create these credentials manually and store
-# them in Google Cloud Secret Manager (GCSM) before applying this configuration.
+# them in Google Cloud Secret Manager (GCSM) before running the production setup.
 #
 # 1. Create the OAuth Client:
 #    - Go to the GCP Console: https://console.cloud.google.com/
@@ -34,19 +34,6 @@
 #    echo -n "YOUR_CLIENT_SECRET" | gcloud secrets create keycloak-google-sso-client-secret \
 #      --project=$PROJECT_ID --data-file=-
 #
+# The production setup script (spezi_setup.py prod) fetches these secrets via
+# gcloud and passes them as variables to tofu automatically.
 # =======================================================================================
-
-# Data sources to fetch the Google SSO credentials from Secret Manager.
-# These secrets must be created manually as described above.
-
-data "google_secret_manager_secret_version" "google_sso_client_id" {
-  count   = var.enable_google_sso ? 1 : 0
-  project = var.gcp_project_id
-  secret  = "keycloak-google-sso-client-id"
-}
-
-data "google_secret_manager_secret_version" "google_sso_client_secret" {
-  count   = var.enable_google_sso ? 1 : 0
-  project = var.gcp_project_id
-  secret  = "keycloak-google-sso-client-secret"
-}

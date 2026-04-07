@@ -255,6 +255,52 @@ resource "kubernetes_secret" "oauth2_proxy_secret_update" {
   depends_on = [random_password.oauth2_proxy_client_secret]
 }
 
+# Backend server client (confidential, service accounts for client credentials flow)
+resource "keycloak_openid_client" "backend_client" {
+  realm_id                     = keycloak_realm.realm.id
+  client_id                    = "spezistudyplatform-server"
+  name                         = "Spezi Study Platform Server"
+  enabled                      = true
+  access_type                  = "CONFIDENTIAL"
+  client_secret                = "change-me-in-production"
+  service_accounts_enabled     = true
+  standard_flow_enabled        = false
+  direct_access_grants_enabled = false
+}
+
+# Realm roles checked by AuthMiddleware when validating JWTs
+resource "keycloak_role" "researcher_role" {
+  realm_id    = keycloak_realm.realm.id
+  name        = "spezistudyplatform-researcher"
+  description = "Researchers authorized to manage studies"
+}
+
+resource "keycloak_role" "participant_role" {
+  realm_id    = keycloak_realm.realm.id
+  name        = "spezistudyplatform-participant"
+  description = "Participants in Spezi studies via mobile app"
+}
+
+# Service account role bindings — backend calls GET /admin/realms/{realm}/groups on startup
+data "keycloak_openid_client" "realm_management" {
+  realm_id  = keycloak_realm.realm.id
+  client_id = "realm-management"
+}
+
+resource "keycloak_openid_client_service_account_role" "backend_view_users" {
+  realm_id                = keycloak_realm.realm.id
+  service_account_user_id = keycloak_openid_client.backend_client.service_account_user_id
+  client_id               = data.keycloak_openid_client.realm_management.id
+  role                    = "view-users"
+}
+
+resource "keycloak_openid_client_service_account_role" "backend_query_groups" {
+  realm_id                = keycloak_realm.realm.id
+  service_account_user_id = keycloak_openid_client.backend_client.service_account_user_id
+  client_id               = data.keycloak_openid_client.realm_management.id
+  role                    = "query-groups"
+}
+
 resource "kubernetes_job_v1" "vault_oauth2_proxy_secret_update" {
   count = var.enable_vault_secret_sync ? 1 : 0
 

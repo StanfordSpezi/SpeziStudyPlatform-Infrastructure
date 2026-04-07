@@ -1,8 +1,8 @@
 # Keycloak Google Identity Provider Configuration
 
 locals {
-  google_client_id     = trimspace(var.enable_google_sso ? data.google_secret_manager_secret_version.google_sso_client_id[0].secret_data : var.google_oauth_client_id)
-  google_client_secret = trimspace(var.enable_google_sso ? data.google_secret_manager_secret_version.google_sso_client_secret[0].secret_data : var.google_oauth_client_secret)
+  google_client_id     = trimspace(var.google_oauth_client_id)
+  google_client_secret = trimspace(var.google_oauth_client_secret)
   google_idp_enabled   = local.google_client_id != "" && local.google_client_secret != ""
 }
 

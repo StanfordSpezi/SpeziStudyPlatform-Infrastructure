@@ -33,20 +33,14 @@ variable "gcp_project_id" {
   type        = string
 }
 
-variable "enable_google_sso" {
-  description = "Whether to fetch Google SSO credentials from Google Secret Manager"
-  type        = bool
-  default     = false
-}
-
 variable "google_oauth_client_id" {
-  description = "Google OAuth client ID"
+  description = "Google OAuth client ID (fetched via gcloud in production, empty for local dev)"
   type        = string
   default     = ""
 }
 
 variable "google_oauth_client_secret" {
-  description = "Google OAuth client secret"
+  description = "Google OAuth client secret (fetched via gcloud in production, empty for local dev)"
   type        = string
   default     = ""
   sensitive   = true
