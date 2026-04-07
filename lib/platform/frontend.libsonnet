@@ -54,7 +54,7 @@
         [
           k.core.v1.container.new('spezistudyplatform-frontend-container', 'ghcr.io/stanfordspezi/spezistudyplatform-web:' + config.frontendImageTag)
           + k.core.v1.container.withImagePullPolicy('Always')
-          + k.core.v1.container.withPorts([k.core.v1.containerPort.new(80)])
+          + k.core.v1.container.withPorts([k.core.v1.containerPort.new(8080)])
           + k.core.v1.container.resources.withLimits({ memory: '1Gi', cpu: '100m' })
           + k.core.v1.container.withEnvFrom([
               k.core.v1.envFromSource.configMapRef.withName('spezistudyplatform-frontend-config'),
@@ -81,7 +81,7 @@
         frontendService: k.core.v1.service.new(
           'spezistudyplatform-frontend-service',
           { app: 'spezistudyplatform-frontend' },
-          [k.core.v1.servicePort.new(80, 80) + k.core.v1.servicePort.withName('main')]
+          [k.core.v1.servicePort.new(80, 8080) + k.core.v1.servicePort.withName('main')]
         )
         + k.core.v1.service.mixin.metadata.withNamespace(config.namespace)
         + k.core.v1.service.mixin.spec.withType('ClusterIP'),
