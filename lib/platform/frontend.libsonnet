@@ -41,7 +41,7 @@
       // Schema validated against the spezistudyplatform-web image's
       // /docker-entrypoint.d/10-generate-env-js.sh, which requires these four vars.
       frontendConfig: k.core.v1.configMap.new('spezistudyplatform-frontend-config', {
-        VITE_API_BASE_PATH: 'https://' + config.domain + '/api',
+        VITE_API_BASE_PATH: 'https://' + config.domain,
         VITE_KEYCLOAK_URL: 'https://' + config.domain + '/auth',
         VITE_KEYCLOAK_REALM: 'spezistudyplatform',
         VITE_KEYCLOAK_CLIENT_ID: 'spezistudyplatform-web',
