@@ -164,7 +164,12 @@
           ],
           routes: [
             {
-              match: 'Host(`' + config.domain + '`) && (Path(`/`) || PathPrefix(`/app`) || PathPrefix(`/static`) || PathPrefix(`/assets`))',
+              // Catch-all for the frontend SPA. The keycloak IngressRoute
+              // (Host && PathPrefix(`/auth`|`/oauth2`)) and the `/api` rule
+              // below are more specific and win on their own paths; this
+              // route then serves /, /env.js, /favicon.ico, /assets/*, and
+              // any other top-level static file the SPA references.
+              match: 'Host(`' + config.domain + '`)',
               priority: 1,
               kind: 'Rule',
               services: [
