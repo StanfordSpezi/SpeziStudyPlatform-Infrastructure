@@ -275,6 +275,22 @@ resource "keycloak_openid_client" "frontend_client" {
   ]
 }
 
+# The Vapor backend's KeycloakJWTPayload expects realm roles at a top-level
+# `roles` claim. Keycloak's default puts them under `realm_access.roles`,
+# so emit a flat `roles` claim into access tokens issued for the SPA client.
+resource "keycloak_openid_user_realm_role_protocol_mapper" "frontend_roles_mapper" {
+  realm_id  = keycloak_realm.realm.id
+  client_id = keycloak_openid_client.frontend_client.id
+  name      = "realm roles -> roles"
+
+  claim_name          = "roles"
+  multivalued         = true
+  claim_value_type    = "String"
+  add_to_id_token     = true
+  add_to_access_token = true
+  add_to_userinfo     = true
+}
+
 # Backend server client (confidential, service accounts for client credentials flow)
 resource "keycloak_openid_client" "backend_client" {
   realm_id                     = keycloak_realm.realm.id
