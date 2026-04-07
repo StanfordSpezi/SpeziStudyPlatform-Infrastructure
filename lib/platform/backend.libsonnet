@@ -71,6 +71,18 @@
           ]),
         ]
       )
+      + k.apps.v1.deployment.spec.template.spec.withInitContainers([
+        k.core.v1.container.new('spezistudyplatform-backend-migrate', 'ghcr.io/stanfordspezi/spezistudyplatform-server:' + config.backendImageTag)
+        + k.core.v1.container.withImagePullPolicy('Always')
+        + k.core.v1.container.withCommand(['./SpeziStudyPlatformServer', 'migrate', '--yes'])
+        + k.core.v1.container.withEnvFrom([
+          k.core.v1.envFromSource.configMapRef.withName('spezistudyplatform-backend-config'),
+        ])
+        + k.core.v1.container.withEnv([
+          k.core.v1.envVar.fromSecretRef('DATABASE_USERNAME', 'spezistudyplatform-postgres-credentials', 'username'),
+          k.core.v1.envVar.fromSecretRef('DATABASE_PASSWORD', 'spezistudyplatform-postgres-credentials', 'password'),
+        ]),
+      ])
       + k.apps.v1.deployment.metadata.withNamespace(config.namespace)
       + k.apps.v1.deployment.metadata.withLabels({ app: 'spezistudyplatform-backend' })
       + k.apps.v1.deployment.spec.selector.withMatchLabels({ app: 'spezistudyplatform-backend' })
