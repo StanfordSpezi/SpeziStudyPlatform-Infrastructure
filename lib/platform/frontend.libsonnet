@@ -38,11 +38,13 @@
       },
 
       // Frontend ConfigMap
+      // Schema validated against the spezistudyplatform-web image's
+      // /docker-entrypoint.d/10-generate-env-js.sh, which requires these four vars.
       frontendConfig: k.core.v1.configMap.new('spezistudyplatform-frontend-config', {
-        'VITE_API_BASE': 'https://' + config.domain + '/',
-        'OAUTH_AUTHORITY': 'https://' + config.domain + '/auth/realms/spezistudyplatform',
-        'OAUTH_REDIRECT_URI': 'https://' + config.domain,
-        'OAUTH_CLIENT_ID': 'spezistudyplatform',
+        VITE_API_BASE_PATH: '/api',
+        VITE_KEYCLOAK_URL: 'https://' + config.domain + '/auth',
+        VITE_KEYCLOAK_REALM: 'spezistudyplatform',
+        VITE_KEYCLOAK_CLIENT_ID: 'spezistudyplatform',
       }) + k.core.v1.configMap.mixin.metadata.withNamespace(config.namespace),
 
       // Frontend Deployment

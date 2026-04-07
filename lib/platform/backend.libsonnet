@@ -39,6 +39,7 @@
       },
 
       backend_config: k.core.v1.configMap.new('spezistudyplatform-backend-config', {
+        APP_ENVIRONMENT: if std.get(config, 'mode', 'DEV') == 'PRODUCTION' then 'production' else 'development',
         KEYCLOAK_URL: 'http://keycloak.' + config.namespace + '.svc.cluster.local/auth',
         KEYCLOAK_REALM: 'spezistudyplatform',
         KEYCLOAK_CLIENT_ID: 'spezistudyplatform-server',
@@ -46,9 +47,7 @@
         KEYCLOAK_PARTICIPANT_ROLE: 'spezistudyplatform-participant',
         DATABASE_HOST: 'spezistudyplatform-db-rw',
         DATABASE_NAME: 'spezistudyplatform',
-      } + (if std.get(config, 'mode', 'DEV') == 'PRODUCTION' then {
-        VAPOR_ENV: 'production',
-      } else {}))
+      })
       + k.core.v1.configMap.metadata.withNamespace(config.namespace),
 
       backend_deployment: k.apps.v1.deployment.new(
