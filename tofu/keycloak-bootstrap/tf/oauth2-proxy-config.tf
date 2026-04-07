@@ -255,6 +255,26 @@ resource "kubernetes_secret" "oauth2_proxy_secret_update" {
   depends_on = [random_password.oauth2_proxy_client_secret]
 }
 
+# Frontend SPA client (public, PKCE) — used by keycloak-js in spezistudyplatform-web
+resource "keycloak_openid_client" "frontend_client" {
+  realm_id  = keycloak_realm.realm.id
+  client_id = "spezistudyplatform-web"
+  name      = "Spezi Study Platform Web"
+  enabled   = true
+
+  access_type                  = "PUBLIC"
+  standard_flow_enabled        = true
+  direct_access_grants_enabled = false
+  pkce_code_challenge_method   = "S256"
+
+  valid_redirect_uris = [
+    "${var.frontend_url}/*",
+  ]
+  web_origins = [
+    var.frontend_url,
+  ]
+}
+
 # Backend server client (confidential, service accounts for client credentials flow)
 resource "keycloak_openid_client" "backend_client" {
   realm_id                     = keycloak_realm.realm.id

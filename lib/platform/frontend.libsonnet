@@ -44,7 +44,7 @@
         VITE_API_BASE_PATH: 'https://' + config.domain + '/api',
         VITE_KEYCLOAK_URL: 'https://' + config.domain + '/auth',
         VITE_KEYCLOAK_REALM: 'spezistudyplatform',
-        VITE_KEYCLOAK_CLIENT_ID: 'spezistudyplatform',
+        VITE_KEYCLOAK_CLIENT_ID: 'spezistudyplatform-web',
       }) + k.core.v1.configMap.mixin.metadata.withNamespace(config.namespace),
 
       // Frontend Deployment
