@@ -20,7 +20,7 @@ resource "keycloak_openid_client" "oauth2_proxy_client" {
 
   access_type = "CONFIDENTIAL"
   valid_redirect_uris = [
-    "${var.frontend_url}/oauth2/callback"
+    "${var.web_url}/oauth2/callback"
   ]
 
   client_secret                = random_password.oauth2_proxy_client_secret.result
@@ -178,8 +178,8 @@ resource "keycloak_openid_client" "argocd_client" {
 
   access_type = "PUBLIC"
   valid_redirect_uris = [
-    "${var.frontend_url}/argo/auth/callback",
-    "${var.frontend_url}/argo/auth/login",
+    "${var.web_url}/argo/auth/callback",
+    "${var.web_url}/argo/auth/login",
     "http://localhost:8085/auth/callback"
   ]
 
@@ -255,8 +255,8 @@ resource "kubernetes_secret" "oauth2_proxy_secret_update" {
   depends_on = [random_password.oauth2_proxy_client_secret]
 }
 
-# Frontend SPA client (public, PKCE) — used by keycloak-js in spezistudyplatform-web
-resource "keycloak_openid_client" "frontend_client" {
+# Web SPA client (public, PKCE), used by keycloak-js in spezistudyplatform-web
+resource "keycloak_openid_client" "web_client" {
   realm_id  = keycloak_realm.realm.id
   client_id = "spezistudyplatform-web"
   name      = "Spezi Study Platform Web"
@@ -268,19 +268,19 @@ resource "keycloak_openid_client" "frontend_client" {
   pkce_code_challenge_method   = "S256"
 
   valid_redirect_uris = [
-    "${var.frontend_url}/*",
+    "${var.web_url}/*",
   ]
   web_origins = [
-    var.frontend_url,
+    var.web_url,
   ]
 }
 
-# The Vapor backend's KeycloakJWTPayload expects realm roles at a top-level
+# The Vapor server's KeycloakJWTPayload expects realm roles at a top-level
 # `roles` claim. Keycloak's default puts them under `realm_access.roles`,
 # so emit a flat `roles` claim into access tokens issued for the SPA client.
-resource "keycloak_openid_user_realm_role_protocol_mapper" "frontend_roles_mapper" {
+resource "keycloak_openid_user_realm_role_protocol_mapper" "web_roles_mapper" {
   realm_id  = keycloak_realm.realm.id
-  client_id = keycloak_openid_client.frontend_client.id
+  client_id = keycloak_openid_client.web_client.id
   name      = "realm roles -> roles"
 
   claim_name          = "roles"
@@ -291,8 +291,8 @@ resource "keycloak_openid_user_realm_role_protocol_mapper" "frontend_roles_mappe
   add_to_userinfo     = true
 }
 
-# Backend server client (confidential, service accounts for client credentials flow)
-resource "keycloak_openid_client" "backend_client" {
+# Server client (confidential, service accounts for client credentials flow)
+resource "keycloak_openid_client" "server_client" {
   realm_id                     = keycloak_realm.realm.id
   client_id                    = "spezistudyplatform-server"
   name                         = "Spezi Study Platform Server"
@@ -317,22 +317,22 @@ resource "keycloak_role" "participant_role" {
   description = "Participants in Spezi studies via mobile app"
 }
 
-# Service account role bindings — backend calls GET /admin/realms/{realm}/groups on startup
+# Service account role bindings, server calls GET /admin/realms/{realm}/groups on startup
 data "keycloak_openid_client" "realm_management" {
   realm_id  = keycloak_realm.realm.id
   client_id = "realm-management"
 }
 
-resource "keycloak_openid_client_service_account_role" "backend_view_users" {
+resource "keycloak_openid_client_service_account_role" "server_view_users" {
   realm_id                = keycloak_realm.realm.id
-  service_account_user_id = keycloak_openid_client.backend_client.service_account_user_id
+  service_account_user_id = keycloak_openid_client.server_client.service_account_user_id
   client_id               = data.keycloak_openid_client.realm_management.id
   role                    = "view-users"
 }
 
-resource "keycloak_openid_client_service_account_role" "backend_query_groups" {
+resource "keycloak_openid_client_service_account_role" "server_query_groups" {
   realm_id                = keycloak_realm.realm.id
-  service_account_user_id = keycloak_openid_client.backend_client.service_account_user_id
+  service_account_user_id = keycloak_openid_client.server_client.service_account_user_id
   client_id               = data.keycloak_openid_client.realm_management.id
   role                    = "query-groups"
 }

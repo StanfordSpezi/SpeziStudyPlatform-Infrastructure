@@ -106,11 +106,13 @@
 
       // Wave 2
       'cnpg-app': app('cloudnative-pg', 2, config, envPath, envPrefix),
-      'auth-app': app('auth', 2, config, envPath, envPrefix),
 
-      // Wave 3  
-      'backend-app': app('backend', 3, config, envPath, envPrefix),
-      'frontend-app': app('frontend', 3, config, envPath, envPrefix),
-      'argocd-app': app('argocd', 3, config, envPath, envPrefix),
+      // Wave 3
+      'auth-app': app('auth', 3, config, envPath, envPrefix),
+
+      // Wave 4
+      'server-app': app('server', 4, config, envPath, envPrefix),
+      'web-app': app('web', 4, config, envPath, envPrefix),
+      'argocd-app': app('argocd', 4, config, envPath, envPrefix),
     }),
 }

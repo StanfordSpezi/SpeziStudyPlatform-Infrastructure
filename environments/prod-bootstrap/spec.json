@@ -1,5 +1,5 @@
 {
-  "apiServer": "https://34.168.138.135",
+  "apiServer": "https://REPLACE_WITH_CLUSTER_API_SERVER",
   "namespace": "argocd",
   "applyStrategy": "server",
   "diffStrategy": "server",

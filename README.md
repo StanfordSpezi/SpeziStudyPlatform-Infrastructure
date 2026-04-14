@@ -12,15 +12,6 @@ Before you begin, ensure you have the following tools installed:
 - **kind**: For running local Kubernetes clusters. (`brew install kind`)
 - **kubectl**: For interacting with Kubernetes clusters. (`brew install kubernetes-cli`)
 - **tofu** (or **terraform**): For infrastructure as code provisioning. (`brew install opentofu`)
-- **Google Cloud SDK/CLI**: Required for production deployments. (`brew install google-cloud-sdk`)
-
-### Python Dependencies
-
-This project uses Python for setup and integration testing. Install the required packages using pip:
-
-```bash
-python3 -m pip install -r ansible/requirements.txt
-```
 
 ## Local Development
 
@@ -34,7 +25,7 @@ This script will:
 
 1.  Create a local Kubernetes cluster using **KIND**.
 2.  Install and configure **ArgoCD**.
-3.  Deploy all platform applications (e.g., backend, frontend, auth).
+3.  Deploy all platform applications (e.g., server, web, auth).
 4.  Bootstrap **Keycloak** with a default realm and test users.
 
 Upon completion, you will see access instructions for ArgoCD and other services.
@@ -65,31 +56,6 @@ The script will test:
 -   Rejection of invalid credentials.
 
 You can customize the test credentials using command-line arguments (e.g., `--username`, `--password`).
-
-## Production Environment
-
-The setup script also supports provisioning and managing a production environment on Google Kubernetes Engine (GKE). 
-NOTE: This requires production (GCP) json keys, which are obtained from the GCP console or CLI.
-
-### Setup
-
-To provision the production infrastructure, use the `prod` command:
-
-```bash
-python3 tools/spezi_setup/spezi_setup.py prod --action setup [OPTIONS]
-```
-
-This requires additional configuration, such as GCP project ID, domain, and credentials. Run `python3 tools/spezi_setup/spezi_setup.py prod --help` for a full list of options.
-
-### Teardown
-
-To tear down the production infrastructure:
-
-```bash
-python3 tools/spezi_setup/spezi_setup.py prod --action teardown [OPTIONS]
-```
-
-**Caution**: This is a destructive operation and will remove the GKE cluster and associated resources.
 
 ## Optional Tools
 

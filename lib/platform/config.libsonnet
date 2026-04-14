@@ -1,4 +1,4 @@
-function(staticIP='34.168.138.135') {
+function(staticIP=null) {
   // Base configuration that can be customized per environment
   base:: {
     namespace: 'spezistudyplatform',
@@ -8,8 +8,8 @@ function(staticIP='34.168.138.135') {
     loadBalancerIP: null, // Optional, set by environment if needed
     mode: 'PRODUCTION', // Default to production mode
     caCrt: null, // Must be set by environment
-    frontendImageTag: 'latest', // Override per environment or deployment
-    backendImageTag: 'latest', // Override per environment or deployment
+    webImageTag: 'latest', // Override per environment or deployment
+    serverImageTag: 'latest', // Override per environment or deployment
     
     // External Secrets configuration (disabled by default)
     externalSecrets: {
@@ -31,7 +31,7 @@ function(staticIP='34.168.138.135') {
   prod:: self.base {
     domain: 'platform.spezi.stanford.edu',
     loadBalancerIP: staticIP,
-    storageClass: 'standard-rwo',
+    storageClass: null,  // Must be overridden for production deployments
     mode: 'PRODUCTION',
     // Use system CA certificates for production (Let's Encrypt should be trusted by default)
     caCrt: null,
@@ -46,8 +46,8 @@ function(staticIP='34.168.138.135') {
     loadBalancerIP: ip,
     storageClass: 'standard',
     mode: 'DEV',
-    frontendImageTag: 'pr-123',
-    backendImageTag: 'pr-17',
+    webImageTag: 'pr-123',
+    serverImageTag: 'pr-17',
     externalSecrets+: {
       enabled: true,
       provider: 'vault',

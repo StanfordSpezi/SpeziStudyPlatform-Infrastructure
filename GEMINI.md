@@ -8,7 +8,7 @@ This repository contains infrastructure for the Spezi Study Platform using a Git
 
 ### Key Components:
 - **environments/**: Tanka environments (local-dev, default, prod-bootstrap, argocd-bootstrap)
-- **lib/platform/**: Jsonnet libraries for platform components (auth, backend, frontend, etc.)
+- **lib/platform/**: Jsonnet libraries for platform components (auth, server, web, etc.)
 - **tofu/**: OpenTofu/Terraform configurations for infrastructure provisioning
 - **kube/**: Raw Kubernetes YAML manifests
 - **setup-tanka.sh**: Automated setup script for local development environment
@@ -50,7 +50,7 @@ kind delete cluster --name=spezi-study-platform
 tk apply environments/local-dev
 
 # Deploy specific component
-tk apply environments/local-dev --component=backend
+tk apply environments/local-dev --component=server
 
 # Show diff before applying
 tk diff environments/local-dev
@@ -63,7 +63,7 @@ tofu init
 
 # For production environment, first port-forward to Keycloak, then apply
 kubectl port-forward -n spezistudyplatform svc/keycloak 8081:80 &
-tofu apply -var="keycloak_url=http://localhost:8081/auth" -var="keycloak_password=admin123!" -var="frontend_url=https://platform.spezi.stanford.edu" -auto-approve
+tofu apply -var="keycloak_url=http://localhost:8081/auth" -var="keycloak_password=admin123!" -var="web_url=https://platform.spezi.stanford.edu" -auto-approve
 ```
 
 ### Kubernetes Operations
@@ -97,7 +97,7 @@ Each Tanka environment follows this pattern:
 ### Wave-based Deployment:
 1. **Wave 0**: Critical infrastructure (namespaces, CRDs)
 2. **Wave 1**: Operators and controllers (CloudNative-PG)
-3. **Wave 2**: Applications (backend, frontend, auth)
+3. **Wave 2**: Applications (server, web, auth)
 
 ## Configuration Management
 
@@ -109,7 +109,6 @@ Each Tanka environment follows this pattern:
 
 Required tools:
 - `kubeseal` (brew install kubeseal)
-- `google-cloud-sdk` (brew install google-cloud-sdk)
 - `tofu` or `terraform` (for infrastructure provisioning)
 - `kind` (for local Kubernetes clusters)
 - `tanka` (brew install tanka)

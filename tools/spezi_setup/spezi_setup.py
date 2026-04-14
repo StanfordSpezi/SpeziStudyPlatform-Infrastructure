@@ -29,7 +29,7 @@ if str(MODULE_DIR) not in sys.path:
     sys.path.insert(0, str(MODULE_DIR))
 
 try:
-    from defaults import LOCAL_DEFAULTS, PROD_DEFAULTS
+    from defaults import LOCAL_DEFAULTS
 except ImportError as exc:  # pragma: no cover - defensive path
     raise ImportError(
         "Unable to import tools/spezi_setup/defaults.py. Ensure the file exists next to spezi_setup.py."
@@ -586,12 +586,6 @@ class LocalEnvironmentSetup(EnvironmentSetupBase):
         self.force_recreate = args.force_recreate_kind
         self.local_ip = args.local_ip or os.environ.get("LOCAL_IP", "")
         self.kubeconfig_file = self.script_dir / ".kind-kubeconfig"
-        self.gcp_project_id = (
-            args.gcp_project_id
-            or os.environ.get("GCP_PROJECT_ID")
-            or os.environ.get("TF_VAR_gcp_project_id")
-            or "local-dev"
-        )
 
     def run(self):
         try:
@@ -720,13 +714,13 @@ class LocalEnvironmentSetup(EnvironmentSetupBase):
             timeout=100,
         )
 
-    def determine_frontend_url(self) -> str:
+    def determine_web_url(self) -> str:
         if self.local_ip and self.local_ip != "127.0.0.1":
             domain = f"spezi.{self.local_ip}.nip.io"
             logging.info("Using nip.io development domain %s", domain)
             return f"https://{domain}"
         domain = "platform.spezi.stanford.edu"
-        logging.info("Falling back to production domain %s for frontend URL", domain)
+        logging.info("Falling back to production domain %s for web URL", domain)
         return f"https://{domain}"
 
     def bootstrap_keycloak(self):
@@ -734,7 +728,7 @@ class LocalEnvironmentSetup(EnvironmentSetupBase):
         password = self.read_secret_value("spezistudyplatform", "keycloak", "admin-password")
         self.start_port_forward("spezistudyplatform", "svc/keycloak", "8081:80")
         self.wait_for_http("http://localhost:8081/auth/")
-        frontend_url = self.determine_frontend_url()
+        web_url = self.determine_web_url()
         tofu_cmd = shutil.which("tofu")
         if not tofu_cmd:
             logging.warning("tofu is not installed; skipping Keycloak bootstrap.")
@@ -765,9 +759,7 @@ class LocalEnvironmentSetup(EnvironmentSetupBase):
             "-var",
             f"keycloak_password={password}",
             "-var",
-            f"frontend_url={frontend_url}",
-            "-var",
-            f"gcp_project_id={self.gcp_project_id}",
+            f"web_url={web_url}",
             "-var",
             "enable_vault_secret_sync=false",
             "-var",
@@ -899,7 +891,7 @@ class LocalEnvironmentSetup(EnvironmentSetupBase):
             "access: Main App       -> https://%s", domain
         )
         logging.info(
-            "access: Backend        -> https://%s/api", domain
+            "access: Server         -> https://%s/api", domain
         )
         logging.info(
             "access: Keycloak Admin -> https://%s/auth/admin", domain
@@ -907,494 +899,16 @@ class LocalEnvironmentSetup(EnvironmentSetupBase):
         
 
 
-class ProductionEnvironmentSetup(EnvironmentSetupBase):
-    def __init__(self, args: argparse.Namespace):
-        super().__init__(args)
-        self.project_id = args.gcp_project_id
-        self.production_domain = args.production_domain
-        self.static_ip = args.static_ip
-        self.tf_state_bucket = args.tf_state_bucket
-        self.tf_state_prefix = args.tf_state_prefix
-        self.gke_tf_state_prefix = args.gke_tf_state_prefix
-        self.credentials_file = Path(
-            args.credentials_file or (self.script_dir / "gcp-service-account-key.json")
-        )
-        self.service_account_email = (
-            args.service_account_email
-            or f"{self.project_id}-svc@{self.project_id}.iam.gserviceaccount.com"
-        )
-        self.keycloak_realm = args.keycloak_realm
-        self.keycloak_base_url = args.keycloak_base_url.rstrip("/")
-        self.keycloak_admin_user = args.keycloak_admin_username
-        self.keycloak_admin_password = args.keycloak_admin_password
-        self.auto_approve = args.auto_approve
-        self.action = args.action
-        self.terraform_cmd = shutil.which("tofu") or shutil.which("terraform")
-        if not self.terraform_cmd:
-            raise CommandError("tofu or terraform must be installed")
-
-    def run(self):
-        try:
-            if self.action == "teardown":
-                self.teardown()
-            else:
-                self.setup()
-        finally:
-            self.cleanup()
-
-    def check_prereqs(self, setup: bool = True):
-        self.ensure_binary("gcloud")
-        if setup:
-            self.ensure_binary("kubectl")
-            self.ensure_binary("ansible-playbook", friendly="ansible-playbook")
-            self.ensure_binary("python3")
-        self.ensure_binary(self.terraform_cmd or "tofu")
-
-    def ensure_gcloud_login(self):
-        result = self.runner.run(
-            [
-                "gcloud",
-                "auth",
-                "list",
-                "--filter=status:ACTIVE",
-                "--format=value(account)",
-            ],
-            capture_output=True,
-        )
-        if not result.stdout.strip():
-            logging.info("No active gcloud authentication found. Launching gcloud auth login...")
-            self.runner.run(["gcloud", "auth", "login"])
-
-    def setup(self):
-        self.check_prereqs(setup=True)
-        self.ensure_gcloud_login()
-        self.configure_project()
-        self.runner.env["GOOGLE_APPLICATION_CREDENTIALS"] = str(self.credentials_file)
-        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(self.credentials_file)
-        logging.info("Provisioning GKE infrastructure with Ansible...")
-        self.runner.run(["ansible-playbook", "ansible/provision-gke.yaml"])
-        self.runner.run(["kubectl", "cluster-info"])
-        self.install_argocd("v3.1.4", "600s")
-        self.install_tanka_plugin()
-        branch = self.get_git_branch()
-        self.apply_root_application(
-            "root-prod",
-            "environments/prod-bootstrap",
-            [("gitBranch", branch)],
-        )
-        self.wait_for_root_app("root-prod")
-        self.wait_for_applications(
-            WaveSpec(["prod-namespace", "prod-cloudnative-pg-crds"], "wave 0 applications"),
-            timeout=600,
-        )
-        self.wait_for_namespace("spezistudyplatform", required=True)
-        self.wait_for_statefulset_pod_ready("keycloak", "spezistudyplatform")
-        self.create_external_secret()
-        google_client_id = self.bootstrap_keycloak()
-        self.wait_for_applications(
-            WaveSpec(["prod-argocd"], "Argo CD application"),
-            timeout=600,
-        )
-        self.restart_argocd_server()
-        self.show_production_summary(google_client_id)
-
-    def configure_project(self):
-        logging.info("Configuring GCP project %s", self.project_id)
-        self.runner.run(["gcloud", "config", "set", "project", self.project_id])
-        logging.info("Enabling required APIs...")
-        for api in [
-            "secretmanager.googleapis.com",
-            "iamcredentials.googleapis.com",
-            "cloudresourcemanager.googleapis.com",
-            "iap.googleapis.com",
-        ]:
-            self.runner.run(["gcloud", "services", "enable", api, f"--project={self.project_id}"])
-        if not self.credentials_file.exists():
-            logging.info("Creating service account key at %s", self.credentials_file)
-            self.runner.run([
-                "gcloud",
-                "iam",
-                "service-accounts",
-                "keys",
-                "create",
-                str(self.credentials_file),
-                f"--iam-account={self.service_account_email}",
-            ])
-        else:
-            logging.info("Reusing existing service account key %s", self.credentials_file)
-        self.runner.run([
-            "gcloud",
-            "auth",
-            "activate-service-account",
-            f"--key-file={self.credentials_file}",
-        ])
-        self.ensure_state_bucket()
-        self.ensure_service_account_roles()
-        self.update_ansible_group_vars()
-
-    def ensure_state_bucket(self):
-        bucket = f"gs://{self.tf_state_bucket}"
-        result = self.runner.run(["gsutil", "ls", bucket], check=False)
-        if result.returncode != 0:
-            logging.info("Creating terraform state bucket %s", bucket)
-            self.runner.run(["gsutil", "mb", "-p", self.project_id, "-l", "us-west1", bucket])
-            self.runner.run(["gsutil", "versioning", "set", "on", bucket])
-        else:
-            logging.info("Terraform state bucket already exists: %s", bucket)
-
-    def ensure_service_account_roles(self):
-        roles = [
-            "roles/storage.admin",
-            "roles/container.admin",
-            "roles/compute.admin",
-            "roles/iam.serviceAccountUser",
-            "roles/secretmanager.secretAccessor",
-        ]
-        for role in roles:
-            cmd = [
-                "gcloud",
-                "projects",
-                "get-iam-policy",
-                self.project_id,
-                "--flatten=bindings[].members",
-                "--format=value(bindings.role)",
-                f"--filter=bindings.members:serviceAccount:{self.service_account_email} AND bindings.role:{role}",
-            ]
-            result = self.runner.run(cmd, capture_output=True, check=False)
-            if role not in (result.stdout or ""):
-                logging.info("Granting role %s to %s", role, self.service_account_email)
-                self.runner.run([
-                    "gcloud",
-                    "projects",
-                    "add-iam-policy-binding",
-                    self.project_id,
-                    f"--member=serviceAccount:{self.service_account_email}",
-                    f"--role={role}",
-                ])
-
-    def update_ansible_group_vars(self):
-        group_vars = self.script_dir / "ansible" / "group_vars" / "all.yaml"
-        if not group_vars.exists():
-            return
-        content = group_vars.read_text().splitlines()
-        updated = False
-        for idx, line in enumerate(content):
-            if line.strip().startswith("gcp_credentials_file:"):
-                content[idx] = f"gcp_credentials_file: \"{self.credentials_file}\""
-                updated = True
-                break
-        if not updated:
-            content.append(f"gcp_credentials_file: \"{self.credentials_file}\"")
-        group_vars.write_text("\n".join(content) + "\n")
-        logging.info("Updated ansible/group_vars/all.yaml with credentials path.")
-
-    def create_external_secret(self):
-        logging.info("Creating GCP service account secret for External Secrets...")
-        self.runner.run(
-            "kubectl create namespace external-secrets-system --dry-run=client -o yaml | kubectl apply -f -"
-        )
-        self.runner.run(
-            f"kubectl create secret generic gcp-sa-key --from-file=secret-access-credentials={self.credentials_file} -n external-secrets-system --dry-run=client -o yaml | kubectl apply -f -"
-        )
-
-    def _fetch_google_sso_secrets(self) -> Tuple[str, str]:
-        """Fetch Google SSO client credentials from GCP Secret Manager via gcloud."""
-        client_id = ""
-        client_secret = ""
-        for secret_name, label in [
-            ("keycloak-google-sso-client-id", "client ID"),
-            ("keycloak-google-sso-client-secret", "client secret"),
-        ]:
-            result = self.runner.run(
-                [
-                    "gcloud", "secrets", "versions", "access", "latest",
-                    f"--secret={secret_name}",
-                    f"--project={self.project_id}",
-                ],
-                capture_output=True,
-                check=False,
-            )
-            value = (result.stdout or "").strip()
-            if result.returncode != 0 or not value:
-                logging.warning(
-                    "Could not fetch Google SSO %s from Secret Manager; Google IDP will be skipped.",
-                    label,
-                )
-                return "", ""
-            if secret_name.endswith("client-id"):
-                client_id = value
-            else:
-                client_secret = value
-        logging.info("Fetched Google SSO credentials from Secret Manager.")
-        return client_id, client_secret
-
-    def bootstrap_keycloak(self) -> str:
-        logging.info("Bootstrapping Keycloak realm for production...")
-        self.start_port_forward("spezistudyplatform", "svc/keycloak", "8081:80")
-        self.wait_for_http(f"{self.keycloak_base_url}/")
-        if not self.keycloak_admin_password:
-            self.keycloak_admin_password = self.read_secret_value(
-                "spezistudyplatform", "keycloak", "admin-password"
-            )
-        if not self.keycloak_admin_user:
-            try:
-                username = self.read_secret_value(
-                    "spezistudyplatform", "keycloak", "admin-username"
-                )
-            except CommandError:
-                logging.warning("Keycloak secret missing admin-username; defaulting to 'user'.")
-                username = ""
-            self.keycloak_admin_user = username or "user"
-        logging.info("Using Keycloak admin username: %s", self.keycloak_admin_user)
-        google_client_id, google_client_secret = self._fetch_google_sso_secrets()
-        tf_dir = self.script_dir / "tofu" / "keycloak-bootstrap" / "tf"
-        backend_file = tf_dir / "backend-prod.tf"
-        backend_file.write_text("terraform {\n  backend \"gcs\" {}\n}\n")
-        extra_env = {
-            "TF_VAR_keycloak_password": self.keycloak_admin_password,
-            "TF_VAR_keycloak_username": self.keycloak_admin_user,
-            "TF_VAR_keycloak_client_id": "admin-cli",
-            "TF_VAR_keycloak_url": self.keycloak_base_url,
-            "TF_VAR_gcp_project_id": self.project_id,
-            "TF_VAR_google_oauth_client_id": google_client_id,
-            "TF_VAR_google_oauth_client_secret": google_client_secret,
-            "TF_VAR_create_test_users": "false",
-        }
-        try:
-            self.runner.run(
-                [
-                    self.terraform_cmd,
-                    "init",
-                    "-migrate-state",
-                    f"-backend-config=bucket={self.tf_state_bucket}",
-                    f"-backend-config=prefix={self.tf_state_prefix}",
-                ],
-                cwd=tf_dir,
-            )
-            lock_object = f"gs://{self.tf_state_bucket}/{self.tf_state_prefix}/default.tflock"
-            self.runner.run(["gsutil", "ls", lock_object], check=False)
-            self.runner.run(["gsutil", "rm", lock_object], check=False)
-            self.runner.run(
-                [
-                    self.terraform_cmd,
-                    "apply",
-                    f"-var=keycloak_url={self.keycloak_base_url}",
-                    f"-var=frontend_url=https://{self.production_domain}",
-                    f"-var=gcp_project_id={self.project_id}",
-                    "-auto-approve",
-                ],
-                cwd=tf_dir,
-                extra_env=extra_env,
-            )
-        finally:
-            backend_file.unlink(missing_ok=True)
-        logging.info("Keycloak bootstrap completed for production.")
-        try:
-            client_secret = fetch_keycloak_client_secret(
-                self.keycloak_base_url,
-                self.keycloak_realm,
-                self.keycloak_admin_user,
-                self.keycloak_admin_password,
-                "argocd",
-            )
-        except CommandError as exc:
-            logging.warning(
-                "Skipping Argo CD client secret sync because Keycloak did not return one: %s",
-                exc,
-            )
-        else:
-            self.store_secret_in_gcp("keycloak-argocd-client", client_secret)
-        result = self.runner.run(
-            [
-                "gcloud",
-                "secrets",
-                "versions",
-                "access",
-                "latest",
-                "--secret=keycloak-google-sso-client-id",
-                f"--project={self.project_id}",
-            ],
-            capture_output=True,
-            check=False,
-        )
-        google_client_id = result.stdout.strip() or "stored-in-secret-manager"
-        logging.info("Google OAuth client info stored in Secret Manager.")
-        return google_client_id
-
-    def store_secret_in_gcp(self, name: str, value: str):
-        create = self.runner.run(
-            [
-                "gcloud",
-                "secrets",
-                "create",
-                name,
-                f"--project={self.project_id}",
-                "--data-file=-",
-            ],
-            input=value,
-            check=False,
-        )
-        if create.returncode != 0:
-            self.runner.run(
-                [
-                    "gcloud",
-                    "secrets",
-                    "versions",
-                    "add",
-                    name,
-                    f"--project={self.project_id}",
-                    "--data-file=-",
-                ],
-                input=value,
-            )
-
-    def show_production_summary(self, google_client_id: str):
-        logging.info("Production setup complete! Argo CD now manages the production environment.")
-        logging.info("Production URL: https://%s", self.production_domain)
-        logging.info("Static IP configured: %s", self.static_ip)
-        logging.info("Google OAuth Client ID: %s", google_client_id)
-        password = self.read_secret_value("argocd", "argocd-initial-admin-secret", "password")
-        logging.info("Argo CD admin password: %s", password)
-        logging.info(
-            "Port-forward the UI with: kubectl port-forward svc/argocd-server -n argocd 8080:443"
-        )
-
-    def teardown(self):
-        self.check_prereqs(setup=False)
-        self.ensure_gcloud_login()
-        self.runner.run(["gcloud", "config", "set", "project", self.project_id])
-        if not self.credentials_file.exists():
-            raise CommandError(
-                f"Service account key not found at {self.credentials_file}; run setup before teardown."
-            )
-        self.runner.run([
-            "gcloud",
-            "auth",
-            "activate-service-account",
-            f"--key-file={self.credentials_file}",
-        ])
-        self.runner.env["GOOGLE_APPLICATION_CREDENTIALS"] = str(self.credentials_file)
-        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(self.credentials_file)
-        self.destroy_gke_infrastructure()
-
-    def destroy_gke_infrastructure(self):
-        terraform_dir = self.script_dir / "tofu" / "gke"
-        backend_file = terraform_dir / "backend-prod.tf"
-        backend_file.write_text("terraform {\n  backend \"gcs\" {}\n}\n")
-        try:
-            self.runner.run(
-                [
-                    self.terraform_cmd,
-                    "init",
-                    "-migrate-state",
-                    f"-backend-config=bucket={self.tf_state_bucket}",
-                    f"-backend-config=prefix={self.gke_tf_state_prefix}",
-                ],
-                cwd=terraform_dir,
-            )
-            lock_object = f"gs://{self.tf_state_bucket}/{self.gke_tf_state_prefix}/default.tflock"
-            self.runner.run(["gsutil", "ls", lock_object], check=False)
-            self.runner.run(["gsutil", "rm", lock_object], check=False)
-            if not self.auto_approve:
-                response = input(
-                    "This will destroy the production GKE cluster and associated resources (static IP kept). Proceed? [y/N] "
-                ).strip().lower()
-                if response not in {"y", "yes"}:
-                    logging.info("Teardown cancelled by user.")
-                    return
-            state = self.runner.run(
-                [self.terraform_cmd, "state", "list"],
-                capture_output=True,
-                check=False,
-                cwd=terraform_dir,
-            )
-            if state.returncode != 0:
-                raise CommandError("Unable to read Terraform state; aborting teardown.")
-            resources = [line.strip() for line in state.stdout.splitlines() if line.strip()]
-            targets = [
-                f"-target={res}"
-                for res in resources
-                if res != "google_compute_address.ip_address"
-            ]
-            if targets:
-                cmd = [self.terraform_cmd, "destroy", "-auto-approve", *targets]
-                self.runner.run(cmd, cwd=terraform_dir)
-            else:
-                logging.info("No Terraform-managed resources to destroy.")
-        finally:
-            backend_file.unlink(missing_ok=True)
-
-
-def fetch_keycloak_client_secret(
-    base_url: str,
-    realm: str,
-    admin_user: str,
-    admin_password: str,
-    client_id: str,
-) -> str:
-    token = request_keycloak_token(base_url, admin_user, admin_password)
-    if not token:
-        raise CommandError("Failed to obtain Keycloak admin token")
-    client_uuid = request_keycloak_client_uuid(base_url, realm, client_id, token)
-    if not client_uuid:
-        raise CommandError(f"Client {client_id} not found in realm {realm}")
-    secret_url = f"{base_url}/admin/realms/{realm}/clients/{client_uuid}/client-secret"
-    req = request.Request(secret_url, headers={"Authorization": f"Bearer {token}"})
-    with request.urlopen(req, timeout=30) as resp:  # noqa: S310
-        payload = json.loads(resp.read().decode("utf-8"))
-    secret = payload.get("value")
-    if not secret:
-        raise CommandError("Keycloak did not return a client secret")
-    return secret
-
-
-def request_keycloak_token(base_url: str, username: str, password: str) -> str:
-    token_url = f"{base_url}/realms/master/protocol/openid-connect/token"
-    data = parse.urlencode(
-        {
-            "client_id": "admin-cli",
-            "username": username,
-            "password": password,
-            "grant_type": "password",
-        }
-    ).encode()
-    req = request.Request(
-        token_url,
-        data=data,
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
-    )
-    try:
-        with request.urlopen(req, timeout=30) as resp:  # noqa: S310
-            payload = json.loads(resp.read().decode("utf-8"))
-            return payload.get("access_token", "")
-    except urlerror.URLError as exc:  # pragma: no cover - network path
-        logging.error("Failed to request Keycloak token: %s", exc)
-        return ""
-
-
-def request_keycloak_client_uuid(
-    base_url: str, realm: str, client_id: str, token: str
-) -> str:
-    url = f"{base_url}/admin/realms/{realm}/clients?clientId={parse.quote(client_id)}"
-    req = request.Request(url, headers={"Authorization": f"Bearer {token}"})
-    with request.urlopen(req, timeout=30) as resp:  # noqa: S310
-        payload = json.loads(resp.read().decode("utf-8"))
-    if isinstance(payload, list) and payload:
-        return payload[0].get("id", "")
-    return ""
-
-
 
 def apply_default_arguments(args: argparse.Namespace) -> argparse.Namespace:
-    defaults = LOCAL_DEFAULTS if args.command == "local" else PROD_DEFAULTS
-    for key, value in defaults.items():
+    for key, value in LOCAL_DEFAULTS.items():
         if not hasattr(args, key):
             setattr(args, key, value)
     return args
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Manage local and production environment setup")
+    parser = argparse.ArgumentParser(description="Manage local environment setup")
     parser.add_argument("--verbose", action="store_true", help="Enable debug logging")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -1426,101 +940,6 @@ def build_parser() -> argparse.ArgumentParser:
             f"(default: {LOCAL_DEFAULTS['local_ip'] or 'auto-detect'})"
         ),
     )
-    local_parser.add_argument(
-        "--gcp-project-id",
-        default=argparse.SUPPRESS,
-        help=(
-            "Override GCP project id used for Keycloak bootstrap "
-            f"(default: {LOCAL_DEFAULTS['gcp_project_id'] or 'env/auto-detect'})"
-        ),
-    )
-    prod_parser = subparsers.add_parser("prod", help="Provision or tear down production infrastructure")
-    prod_parser.add_argument(
-        "--action",
-        choices=["setup", "teardown"],
-        default=argparse.SUPPRESS,
-        help=f"Action to perform (default: {PROD_DEFAULTS['action']})",
-    )
-    prod_parser.add_argument(
-        "--gcp-project-id",
-        default=argparse.SUPPRESS,
-        help=f"GCP project id (default: {PROD_DEFAULTS['gcp_project_id']})",
-    )
-    prod_parser.add_argument(
-        "--production-domain",
-        default=argparse.SUPPRESS,
-        help=f"Primary domain for the platform (default: {PROD_DEFAULTS['production_domain']})",
-    )
-    prod_parser.add_argument(
-        "--static-ip",
-        default=argparse.SUPPRESS,
-        help=f"Reserved static IP address (default: {PROD_DEFAULTS['static_ip']})",
-    )
-    prod_parser.add_argument(
-        "--tf-state-bucket",
-        default=argparse.SUPPRESS,
-        help=f"Terraform state bucket (default: {PROD_DEFAULTS['tf_state_bucket']})",
-    )
-    prod_parser.add_argument(
-        "--tf-state-prefix",
-        default=argparse.SUPPRESS,
-        help=f"Terraform state prefix (default: {PROD_DEFAULTS['tf_state_prefix']})",
-    )
-    prod_parser.add_argument(
-        "--gke-tf-state-prefix",
-        default=argparse.SUPPRESS,
-        help=f"GKE Terraform state prefix (default: {PROD_DEFAULTS['gke_tf_state_prefix']})",
-    )
-    prod_parser.add_argument(
-        "--service-account-email",
-        default=argparse.SUPPRESS,
-        help=(
-            "Service account email used for provisioning "
-            f"(default: {PROD_DEFAULTS['service_account_email'] or 'derive from project'})"
-        ),
-    )
-    prod_parser.add_argument(
-        "--credentials-file",
-        default=argparse.SUPPRESS,
-        help=(
-            "Path to the GCP service account key file "
-            f"(default: {PROD_DEFAULTS['credentials_file'] or 'repo root gcp-service-account-key.json'})"
-        ),
-    )
-    prod_parser.add_argument(
-        "--keycloak-realm",
-        default=argparse.SUPPRESS,
-        help=f"Keycloak realm name (default: {PROD_DEFAULTS['keycloak_realm']})",
-    )
-    prod_parser.add_argument(
-        "--keycloak-base-url",
-        default=argparse.SUPPRESS,
-        help=f"Keycloak base URL (default: {PROD_DEFAULTS['keycloak_base_url']})",
-    )
-    prod_parser.add_argument(
-        "--keycloak-admin-username",
-        default=argparse.SUPPRESS,
-        help=(
-            "Keycloak admin username (default: value in Kubernetes secret or "
-            f"{PROD_DEFAULTS['keycloak_admin_username'] or 'auto-detect'})"
-        ),
-    )
-    prod_parser.add_argument(
-        "--keycloak-admin-password",
-        default=argparse.SUPPRESS,
-        help="Keycloak admin password (default: value in Kubernetes secret)",
-    )
-    prod_parser.add_argument(
-        "--auto-approve",
-        "--yes",
-        dest="auto_approve",
-        action="store_true",
-        default=argparse.SUPPRESS,
-        help=(
-            "Skip confirmation prompts during destructive actions "
-            f"(default: {PROD_DEFAULTS['auto_approve']})"
-        ),
-    )
 
     return parser
 
@@ -1530,10 +949,7 @@ def main():
     args = parser.parse_args()
     args = apply_default_arguments(args)
     configure_logging(args.verbose)
-    if args.command == "local":
-        runner = LocalEnvironmentSetup(args)
-    else:
-        runner = ProductionEnvironmentSetup(args)
+    runner = LocalEnvironmentSetup(args)
     try:
         runner.run()
     except (CommandError, RuntimeError) as exc:

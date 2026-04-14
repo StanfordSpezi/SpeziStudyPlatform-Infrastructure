@@ -22,28 +22,10 @@ variable "keycloak_url" {
   default     = "https://platform.spezi.stanford.edu/auth"
 }
 
-variable "frontend_url" {
-  description = "Frontend URL for OAuth2 redirect URIs"
+variable "web_url" {
+  description = "Web URL for OAuth2 redirect URIs"
   type        = string
   default     = "https://spezi.172.20.117.44.nip.io" # Default to local-dev
-}
-
-variable "gcp_project_id" {
-  description = "GCP project ID for OAuth client creation"
-  type        = string
-}
-
-variable "google_oauth_client_id" {
-  description = "Google OAuth client ID (fetched via gcloud in production, empty for local dev)"
-  type        = string
-  default     = ""
-}
-
-variable "google_oauth_client_secret" {
-  description = "Google OAuth client secret (fetched via gcloud in production, empty for local dev)"
-  type        = string
-  default     = ""
-  sensitive   = true
 }
 
 variable "enable_vault_secret_sync" {

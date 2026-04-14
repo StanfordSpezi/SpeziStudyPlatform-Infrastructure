@@ -164,7 +164,7 @@
           ],
           routes: [
             {
-              // Catch-all for the frontend SPA. The keycloak IngressRoute
+              // Catch-all for the web SPA. The keycloak IngressRoute
               // (Host && PathPrefix(`/auth`|`/oauth2`)) and the `/api` rule
               // below are more specific and win on their own paths; this
               // route then serves /, /env.js, /favicon.ico, /assets/*, and
@@ -174,7 +174,7 @@
               kind: 'Rule',
               services: [
                 {
-                  name: config.namespace + '-frontend-service',
+                  name: config.namespace + '-web-service',
                   port: 80,
                 },
               ],
@@ -189,7 +189,7 @@
               kind: 'Rule',
               services: [
                 {
-                  name: config.namespace + '-backend-service',
+                  name: config.namespace + '-server-service',
                   port: 8080,
                 },
               ],

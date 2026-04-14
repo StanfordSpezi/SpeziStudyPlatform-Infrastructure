@@ -76,43 +76,15 @@
             adminPassword: 'admin123!',
           },
           postgresql: {
-            global+: {
-              security+: {
-                allowInsecureImages: true,
-              },
-            },
-            image+: {
-              registry: 'docker.io',
-              repository: 'bitnamilegacy/postgresql',
-            },
-            auth: {
-              postgresPassword: 'postgres123!',
-              password: 'keycloak123!',
-            },
-            primary: {
-              tolerations: [
-                {
-                  key: 'node-role.kubernetes.io/control-plane',
-                  operator: 'Exists',
-                  effect: 'NoSchedule',
-                },
-              ],
-            },
+            enabled: false,
           },
-          initContainers: |||
-            - name: realm-ext-provider
-              image: curlimages/curl
-              imagePullPolicy: IfNotPresent
-              command:
-                - sh
-              args:
-                - -c
-                - |
-                  curl -L -o /emptydir/app-providers-dir/keycloakify-spezistudyplatform3-theme.jar https://s3.us-west-2.amazonaws.com/ngusav.es/Keycloak+theme+25%2B.jar
-              volumeMounts:
-                - name: empty-dir
-                  mountPath: /emptydir
-          |||,
+          externalDatabase: {
+            host: 'spezistudyplatform-db-rw',
+            port: 5432,
+            user: 'keycloak',
+            password: 'keycloak123!',
+            database: 'keycloak',
+          },
         },
       }),
     },

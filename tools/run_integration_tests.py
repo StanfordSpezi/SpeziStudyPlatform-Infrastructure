@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""End-to-end checks for frontend access through oauth2-proxy."""
+"""End-to-end checks for web access through oauth2-proxy."""
 
 from __future__ import annotations
 
@@ -484,7 +484,7 @@ def _is_ipv4(value: str) -> bool:
 
 def main(argv=None):
     global CONFIG
-    parser = argparse.ArgumentParser(description="Basic integration test for the Spezi frontend/whoami stack.")
+    parser = argparse.ArgumentParser(description="Basic integration test for the Spezi web/whoami stack.")
     parser.add_argument(
         "--base-url",
         help="Root URL for the ingress/Traefik endpoint. If not provided, it will be auto-detected.",

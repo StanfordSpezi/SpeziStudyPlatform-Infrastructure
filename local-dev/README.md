@@ -26,8 +26,8 @@ This guide explains how to set up a local development environment using KIND (Ku
 
     The services will be available at `http://spezi.127.0.0.1.nip.io`.
 
-    *   Frontend: `http://spezi.127.0.0.1.nip.io`
-    *   Backend: `http://spezi.127.0.0.1.nip.io/api`
+    *   Web: `http://spezi.127.0.0.1.nip.io`
+    *   Server: `http://spezi.127.0.0.1.nip.io/api`
     *   Keycloak: `http://spezi.127.0.0.1.nip.io/auth`
     *   ArgoCD UI: `kubectl port-forward svc/argocd-server -n argocd 8080:443`
 

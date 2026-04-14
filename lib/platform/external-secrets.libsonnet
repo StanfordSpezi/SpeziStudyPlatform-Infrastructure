@@ -96,11 +96,11 @@
         },
 
         // Test secret in Vault (this would normally be done via vault CLI)
-        'vault-backend-secret-setup': {
+        'vault-server-secret-setup': {
           apiVersion: 'batch/v1',
           kind: 'Job',
           metadata: {
-            name: 'vault-backend-secret-setup',
+            name: 'vault-server-secret-setup',
             namespace: 'vault',
           },
           spec: {
@@ -114,7 +114,7 @@
                     command: [
                       'sh',
                       '-c',
-                      'sleep 10 && (vault kv get secret/spezistudyplatform-backend >/dev/null 2>&1 || vault kv put secret/spezistudyplatform-backend OAUTH_CLIENT_SECRET=change-me-in-production) || true',
+                      'sleep 10 && (vault kv get secret/spezistudyplatform-server >/dev/null 2>&1 || vault kv put secret/spezistudyplatform-server OAUTH_CLIENT_SECRET=change-me-in-production) || true',
                     ],
                     env: [
                       {
@@ -133,11 +133,11 @@
           },
         },
 
-        'vault-frontend-secret-setup': {
+        'vault-web-secret-setup': {
           apiVersion: 'batch/v1',
           kind: 'Job',
           metadata: {
-            name: 'vault-frontend-secret-setup',
+            name: 'vault-web-secret-setup',
             namespace: 'vault',
           },
           spec: {
@@ -151,7 +151,7 @@
                     command: [
                       'sh',
                       '-c',
-                      'sleep 10 && (vault kv get secret/spezistudyplatform-frontend >/dev/null 2>&1 || vault kv put secret/spezistudyplatform-frontend OAUTH_CLIENT_SECRET=dummy-frontend-secret) || true',
+                      'sleep 10 && (vault kv get secret/spezistudyplatform-web >/dev/null 2>&1 || vault kv put secret/spezistudyplatform-web OAUTH_CLIENT_SECRET=dummy-web-secret) || true',
                     ],
                     env: [
                       {

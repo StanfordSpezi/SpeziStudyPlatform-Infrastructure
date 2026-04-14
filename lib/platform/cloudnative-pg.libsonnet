@@ -35,6 +35,10 @@
               secret: {
                 name: 'spezistudyplatform-postgres-credentials',
               },
+              postInitSQL: [
+                "CREATE ROLE keycloak WITH LOGIN PASSWORD 'keycloak123!';",
+                "CREATE DATABASE keycloak OWNER keycloak;",
+              ],
             },
           },
         },

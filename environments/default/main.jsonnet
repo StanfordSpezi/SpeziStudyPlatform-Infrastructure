@@ -22,8 +22,8 @@ function(component=null) {
     local certManager = import '../../lib/platform/cert-manager.libsonnet';
     local cloudnativePgCrds = import '../../lib/platform/cloudnative-pg-crds.libsonnet';
     local cloudnativePg = import '../../lib/platform/cloudnative-pg.libsonnet';
-    local backend = import '../../lib/platform/backend.libsonnet';
-    local frontend = import '../../lib/platform/frontend.libsonnet';
+    local server = import '../../lib/platform/server.libsonnet';
+    local web = import '../../lib/platform/web.libsonnet';
     local traefik = import '../../lib/platform/traefik.libsonnet';
     local auth = import '../../lib/platform/auth.libsonnet';
     local externalSecrets = import '../../lib/platform/external-secrets.libsonnet';
@@ -36,8 +36,8 @@ function(component=null) {
       'cloudnative-pg-crds': cloudnativePgCrds.withConfig(config),
       'cloudnative-pg': cloudnativePg.withConfig(config),
       'external-secrets': externalSecrets.withConfig(config),
-      backend: backend.withConfig(config),
-      frontend: frontend.withConfig(config),
+      server: server.withConfig(config),
+      web: web.withConfig(config),
       traefik: traefik.withConfig(config),
       auth: auth.withConfig(config),
       argocd: argocd.withConfig(config),

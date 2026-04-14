@@ -6,8 +6,6 @@
 *.tfstate
 *.tfstate.*
 *.tfstate.backup
-SpeziStudyPlatformDev.json
-gcp-service-account-key.json
 
 __pycache__/
 *.py[cod]
