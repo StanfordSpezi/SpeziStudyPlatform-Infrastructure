@@ -14,7 +14,7 @@
       source: {
         repoURL: 'https://github.com/StanfordSpezi/spezi-study-platform-infrastructure.git',
         path: envPath,
-        targetRevision: std.get(config, 'gitBranch', if std.get(config, 'mode', 'DEV') == 'PRODUCTION' then 'main' else 'main'),
+        targetRevision: std.get(config, 'gitBranch', 'main'),
         plugin: {
           name: 'tanka',
           env: [
@@ -24,7 +24,7 @@
             },
             {
               name: 'ENVIRONMENT',
-              value: if std.get(config, 'mode', 'DEV') == 'PRODUCTION' then 'default' else 'local-dev',
+              value: if std.get(config, 'mode', 'PRODUCTION') == 'PRODUCTION' then 'default' else 'local-dev',
             },
           ] + (if std.get(config, 'localIP', null) != null then [
             {
@@ -52,7 +52,7 @@
   },
   withConfig(config)::
     local envPath = '.';
-    local envPrefix = if std.get(config, 'mode', 'DEV') == 'PRODUCTION' then 'prod' else 'local-dev';
+    local envPrefix = if std.get(config, 'mode', 'PRODUCTION') == 'PRODUCTION' then 'prod' else 'local-dev';
     std.objectValues({
       // Wave 0
       'namespace-app': app('namespace', 0, config, envPath, envPrefix),

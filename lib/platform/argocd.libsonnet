@@ -51,12 +51,12 @@
           commonName: config.domain,
           secretName: 'spezistudyplatform-main-tls-secret',
           issuerRef: {
-            name: if std.get(config, 'mode', 'DEV') == 'PRODUCTION' then 'letsencrypt-prod' else 'selfsigned-issuer',
+            name: if config.isProd then 'letsencrypt-prod' else 'selfsigned-issuer',
             kind: 'ClusterIssuer',
           },
           dnsNames: [
             config.domain,
-          ] + (if std.get(config, 'mode', 'DEV') == 'PRODUCTION' then [] else ['spezi.127.0.0.1.nip.io']),
+          ] + (if config.isProd then [] else ['spezi.127.0.0.1.nip.io']),
         },
       },
 
@@ -67,7 +67,7 @@
           name: 'argocd-ingress',
           namespace: 'argocd',
           annotations: {
-            'cert-manager.io/cluster-issuer': if std.get(config, 'mode', 'DEV') == 'PRODUCTION' then 'letsencrypt-prod' else 'selfsigned-issuer',
+            'cert-manager.io/cluster-issuer': if config.isProd then 'letsencrypt-prod' else 'selfsigned-issuer',
           },
         },
         spec: {

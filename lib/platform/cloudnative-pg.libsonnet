@@ -22,7 +22,7 @@
           imageName: 'ghcr.io/cloudnative-pg/postgresql:17-bullseye',
           instances: 1,
           storage: {
-            size: '1Gi',
+            size: config.dbStorageSize,
           },
           monitoring: {
             enablePodMonitor: true,
@@ -35,14 +35,55 @@
               secret: {
                 name: 'spezistudyplatform-postgres-credentials',
               },
-              postInitSQL: [
-                "CREATE ROLE keycloak WITH LOGIN PASSWORD 'keycloak123!';",
-                "CREATE DATABASE keycloak OWNER keycloak;",
-              ],
+              postInitApplicationSQLRefs: {
+                secretRefs: [
+                  {
+                    name: 'keycloak-db-init-sql',
+                    key: 'sql',
+                  },
+                ],
+              },
             },
           },
         },
       },
+      // ExternalSecret that templates the keycloak init SQL from Vault credentials
+      {
+        apiVersion: 'external-secrets.io/v1',
+        kind: 'ExternalSecret',
+        metadata: {
+          name: 'keycloak-db-init-sql',
+          namespace: config.namespace,
+          annotations: {
+            'argocd.argoproj.io/compare-options': 'IgnoreExtraneous',
+          },
+        },
+        spec: {
+          refreshInterval: '15s',
+          secretStoreRef: { name: 'vault-backend', kind: 'ClusterSecretStore' },
+          target: {
+            name: 'keycloak-db-init-sql',
+            creationPolicy: 'Owner',
+            template: {
+              engineVersion: 'v2',
+              data: {
+                sql: "CREATE ROLE keycloak WITH LOGIN PASSWORD '{{ .password }}'; CREATE DATABASE keycloak OWNER keycloak;",
+              },
+            },
+          },
+          data: [{
+            secretKey: 'password',
+            remoteRef: {
+              key: 'keycloak-db-credentials',
+              property: 'password',
+              conversionStrategy: 'Default',
+              decodingStrategy: 'None',
+              metadataPolicy: 'None',
+            },
+          }],
+        },
+      },
+      // Main database credentials
       {
         apiVersion: 'external-secrets.io/v1',
         kind: 'ExternalSecret',

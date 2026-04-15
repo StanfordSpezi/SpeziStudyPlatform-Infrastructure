@@ -8,14 +8,14 @@
         values: {
           service: {
             enabled: true,
-            type: if std.get(config, 'mode', 'DEV') == 'DEV' then 'NodePort' else 'LoadBalancer',
-            spec: if std.get(config, 'mode', 'DEV') == 'DEV' then {} else {
+            type: if config.isDev then 'NodePort' else 'LoadBalancer',
+            spec: if config.isDev then {} else {
               loadBalancerIP: config.loadBalancerIP,
             },
           },
           logs: {
             general: {
-              level: 'DEBUG',
+              level: config.traefikLogLevel,
             },
             access: {
               enabled: true,
@@ -36,8 +36,8 @@
             annotations: {},
           },
           deployment: {
-            hostNetwork: std.get(config, 'mode', 'DEV') == 'DEV',
-            dnsPolicy: if std.get(config, 'mode', 'DEV') == 'DEV' then 'ClusterFirstWithHostNet' else null,
+            hostNetwork: config.isDev,
+            dnsPolicy: if config.isDev then 'ClusterFirstWithHostNet' else null,
             initContainers: [
               {
                 name: 'volume-permissions',
@@ -68,7 +68,7 @@
             runAsNonRoot: true,
             runAsUser: 65532,
           },
-          ports: if std.get(config, 'mode', 'DEV') == 'DEV' then {
+          ports: if config.isDev then {
             web: {
               port: 80,
               nodePort: 30080,
@@ -92,13 +92,74 @@
               enabled: true,
             },
           },
-          additionalArguments: if std.get(config, 'mode', 'DEV') == 'DEV' then [
+          additionalArguments: if config.isDev then [
             '--entrypoints.websecure.forwardedHeaders.trustedIPs=10.244.0.0/16,127.0.0.1/32,172.16.0.0/12',
             '--entrypoints.web.forwardedHeaders.trustedIPs=10.244.0.0/16,127.0.0.1/32,172.16.0.0/12',
           ] else [],
         },
       }),
       
+      // HTTP-to-HTTPS redirect middleware
+      'redirect-https-middleware': {
+        apiVersion: 'traefik.io/v1alpha1',
+        kind: 'Middleware',
+        metadata: {
+          name: 'redirect-https',
+          namespace: config.namespace,
+        },
+        spec: {
+          redirectScheme: {
+            scheme: 'https',
+            permanent: true,
+          },
+        },
+      },
+
+      // Security headers middleware (HSTS, anti-clickjacking, anti-sniffing)
+      'security-headers-middleware': {
+        apiVersion: 'traefik.io/v1alpha1',
+        kind: 'Middleware',
+        metadata: {
+          name: 'security-headers',
+          namespace: config.namespace,
+        },
+        spec: {
+          headers: {
+            stsSeconds: 31536000,
+            stsIncludeSubdomains: true,
+            stsPreload: true,
+            forceSTSHeader: true,
+            frameDeny: true,
+            contentTypeNosniff: true,
+            browserXssFilter: true,
+            referrerPolicy: 'strict-origin-when-cross-origin',
+          },
+        },
+      },
+
+      // HTTP catch-all IngressRoute that redirects to HTTPS
+      'http-redirect-ingress': {
+        apiVersion: 'traefik.io/v1alpha1',
+        kind: 'IngressRoute',
+        metadata: {
+          name: 'http-redirect',
+          namespace: config.namespace,
+        },
+        spec: {
+          entryPoints: ['web'],
+          routes: [{
+            match: 'HostRegexp(`.+`)',
+            kind: 'Rule',
+            priority: 1,
+            middlewares: [{ name: 'redirect-https' }],
+            services: [{
+              name: config.namespace + '-web-service',
+              port: 80,
+            }],
+          }],
+        },
+      },
+
       // OAuth2 Proxy Middleware for forward authentication
       'oauth2-proxy-middleware': {
         apiVersion: 'traefik.io/v1alpha1',
@@ -152,16 +213,13 @@
           name: config.namespace + '-ingress',
           namespace: config.namespace,
           annotations: {
-            'cert-manager.io/cluster-issuer': if std.get(config, 'mode', 'DEV') == 'PRODUCTION' then 'letsencrypt-prod' else 'selfsigned-issuer',
+            'cert-manager.io/cluster-issuer': if config.isProd then 'letsencrypt-prod' else 'selfsigned-issuer',
             'ingress.kubernetes.io/proxy-buffer-size': '128k',
             'ingress.kubernetes.io/auth-response-headers': 'X-Auth-Request-User, X-Auth-Request-Email, X-Auth-Request-Groups',
           },
         },
         spec: {
-          entryPoints: [
-            'web',
-            'websecure',
-          ],
+          entryPoints: ['websecure'],
           routes: [
             {
               // Catch-all for the web SPA. The keycloak IngressRoute
@@ -179,6 +237,7 @@
                 },
               ],
               middlewares: [
+                { name: 'security-headers' },
                 { name: 'oauth2-proxy' },
                 { name: 'oauth2-errors' },
               ],
@@ -194,6 +253,7 @@
                 },
               ],
               middlewares: [
+                { name: 'security-headers' },
                 { name: 'oauth2-proxy' },
                 { name: 'oauth2-errors' },
               ],
@@ -205,33 +265,28 @@
         },
       },
 
-      // Traefik Dashboard IngressRoute
-      'traefik-dashboard-ingress': {
-        apiVersion: 'traefik.io/v1alpha1',
-        kind: 'IngressRoute',
-        metadata: {
-          name: 'dashboard',
-          namespace: config.namespace,
-          annotations: {
-            'traefik.ingress.kubernetes.io/router.tls': 'true',
+    } + (
+      // Traefik Dashboard: only exposed in dev (no auth middleware)
+      if config.isDev then {
+        'traefik-dashboard-ingress': {
+          apiVersion: 'traefik.io/v1alpha1',
+          kind: 'IngressRoute',
+          metadata: {
+            name: 'dashboard',
+            namespace: config.namespace,
+            annotations: {
+              'traefik.ingress.kubernetes.io/router.tls': 'true',
+            },
           },
-        },
-        spec: {
-          entryPoints: [
-            'web',
-          ],
-          routes: [
-            {
+          spec: {
+            entryPoints: ['web'],
+            routes: [{
               match: "PathPrefix('/dashboard')",
               kind: 'Rule',
-              services: [
-                {
-                  name: 'api@internal',
-                },
-              ],
-            },
-          ],
+              services: [{ name: 'api@internal' }],
+            }],
+          },
         },
-      },
-    }
+      } else {}
+    ),
 }

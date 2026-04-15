@@ -597,23 +597,43 @@ class LocalEnvironmentSetup(EnvironmentSetupBase):
     def setup(self):
         self.ensure_binary("kind")
         self.ensure_binary("kubectl")
+        self.ensure_binary("tk", "Tanka (tk)")
         self.detect_local_ip()
         self.ensure_kind_cluster()
-        self.install_argocd("v3.1.1", "300s")
-        self.install_tanka_plugin()
-        branch = self.get_git_branch()
-        self.apply_root_application(
-            "root",
-            "environments/argocd-bootstrap",
-            [("gitBranch", branch), ("localIP", self.local_ip or "")],
-        )
-        self.wait_for_root_app("root")
-        self.handle_application_waves()
+        self.direct_apply_waves()
         self.wait_for_namespace("spezistudyplatform", required=True)
         self.wait_for_statefulset_pod_ready("keycloak", "spezistudyplatform")
         self.bootstrap_keycloak()
-        self.restart_argocd_server()
         self.show_completion_message()
+
+    def tk_apply_component(self, component: str):
+        """Apply a single Tanka component to the local-dev environment."""
+        env_path = self.script_dir / "environments" / "local-dev"
+        cmd = [
+            "tk",
+            "apply",
+            str(env_path),
+            "--tla-str", f"localIP={self.local_ip}",
+            "--tla-str", f"component={component}",
+            "--server-side",
+            "--force",
+        ]
+        self.runner.run(cmd)
+
+    def direct_apply_waves(self):
+        """Apply all components via Tanka in wave order."""
+        waves = [
+            WaveSpec(["namespace", "cloudnative-pg-crds", "external-secrets"], "Wave 0: CRDs and namespaces"),
+            WaveSpec(["traefik", "cert-manager"], "Wave 1: Operators"),
+            WaveSpec(["cloudnative-pg"], "Wave 2: Database"),
+            WaveSpec(["auth"], "Wave 3: Authentication"),
+            WaveSpec(["server", "web", "argocd"], "Wave 4: Applications"),
+        ]
+        for wave in waves:
+            logging.info("--- %s ---", wave.description)
+            for component in wave.apps:
+                logging.info("Applying component: %s", component)
+                self.tk_apply_component(component)
 
     def detect_local_ip(self):
         if self.local_ip:
@@ -697,22 +717,6 @@ class LocalEnvironmentSetup(EnvironmentSetupBase):
         self.runner.env["KUBECONFIG"] = str(self.kubeconfig_file)
         logging.info("KUBECONFIG updated at %s", self.kubeconfig_file)
 
-    def handle_application_waves(self):
-        self.wait_for_applications(
-            WaveSpec(
-                ["local-dev-namespace", "local-dev-cloudnative-pg-crds"],
-                "wave 0 applications",
-            ),
-            timeout=100,
-        )
-        self.wait_for_applications(
-            WaveSpec(["local-dev-auth"], "wave 2 applications"),
-            timeout=10,
-        )
-        self.wait_for_applications(
-            WaveSpec(["local-dev-argocd"], "Argo CD application"),
-            timeout=100,
-        )
 
     def determine_web_url(self) -> str:
         if self.local_ip and self.local_ip != "127.0.0.1":
@@ -877,12 +881,7 @@ class LocalEnvironmentSetup(EnvironmentSetupBase):
         ], check=False)
 
     def show_completion_message(self):
-        logging.info("Setup complete! Argo CD now manages the local-dev environment.")
-        password = self.read_secret_value("argocd", "argocd-initial-admin-secret", "password")
-        logging.info("Argo CD admin password: %s", password)
-        logging.info(
-            "Port-forward the UI with: kubectl port-forward svc/argocd-server -n argocd 8080:443"
-        )
+        logging.info("Setup complete! Components applied via Tanka.")
         domain = f"spezi.{self.local_ip}.nip.io" if self.local_ip else "localhost"
         logging.info(
             "access: ArgoCD         -> https://%s/argo", domain

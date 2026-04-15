@@ -140,7 +140,7 @@
         },
       },
     } + (
-      if config.mode == 'PRODUCTION' then {
+      if config.isProd then {
         'oauth2-proxy-ca-secret': {
           apiVersion: 'v1',
           kind: 'Secret',
@@ -169,7 +169,7 @@
           },
           configuration: {
             content: (
-              if config.mode == 'DEV' then |||
+              if config.isDev then |||
                 provider = "keycloak-oidc"
                 oidc_issuer_url = "http://keycloak.%(namespace)s.svc.cluster.local/auth/realms/spezistudyplatform"
                 skip_oidc_discovery = true
@@ -211,7 +211,7 @@
             '--custom-templates-dir=/templates',
             '--standard-logging=true',
           ] + (
-            if config.mode == 'DEV' then
+            if config.isDev then
               ['--insecure-oidc-skip-issuer-verification=true']
             else
               []

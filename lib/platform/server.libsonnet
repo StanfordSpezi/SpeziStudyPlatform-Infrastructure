@@ -39,7 +39,7 @@
       },
 
       server_config: k.core.v1.configMap.new('spezistudyplatform-server-config', {
-        APP_ENVIRONMENT: if std.get(config, 'mode', 'DEV') == 'PRODUCTION' then 'production' else 'development',
+        APP_ENVIRONMENT: if config.isProd then 'production' else 'development',
         KEYCLOAK_URL: 'http://keycloak.' + config.namespace + '.svc.cluster.local/auth',
         KEYCLOAK_REALM: 'spezistudyplatform',
         KEYCLOAK_CLIENT_ID: 'spezistudyplatform-server',
@@ -52,15 +52,22 @@
 
       server_deployment: k.apps.v1.deployment.new(
         name='spezistudyplatform-server',
-        replicas=1,
+        replicas=config.replicas.server,
         containers=[
           k.core.v1.container.new('spezistudyplatform-server-container', 'ghcr.io/stanfordspezi/spezistudyplatform-server:' + config.serverImageTag)
           + k.core.v1.container.withImagePullPolicy('Always')
           + k.core.v1.container.withPorts([k.core.v1.containerPort.new(8080)])
+          + k.core.v1.container.resources.withRequests({
+            memory: '512Mi',
+            cpu: '250m',
+          })
           + k.core.v1.container.resources.withLimits({
             memory: '2Gi',
             cpu: '1',
           })
+          + k.core.v1.container.securityContext.withAllowPrivilegeEscalation(false)
+          + k.core.v1.container.securityContext.withRunAsNonRoot(true)
+          + k.core.v1.container.securityContext.capabilities.withDrop(['ALL'])
           + k.core.v1.container.withEnvFrom([
             k.core.v1.envFromSource.configMapRef.withName('spezistudyplatform-server-config'),
           ])
@@ -68,13 +75,24 @@
             k.core.v1.envVar.fromSecretRef('DATABASE_USERNAME', 'spezistudyplatform-postgres-credentials', 'username'),
             k.core.v1.envVar.fromSecretRef('DATABASE_PASSWORD', 'spezistudyplatform-postgres-credentials', 'password'),
             k.core.v1.envVar.fromSecretRef('KEYCLOAK_CLIENT_SECRET', 'spezistudyplatform-server-secret', 'OAUTH_CLIENT_SECRET'),
-          ]),
+          ])
+          + k.core.v1.container.readinessProbe.httpGet.withPath('/api/health')
+          + k.core.v1.container.readinessProbe.httpGet.withPort(8080)
+          + k.core.v1.container.readinessProbe.withInitialDelaySeconds(10)
+          + k.core.v1.container.readinessProbe.withPeriodSeconds(10)
+          + k.core.v1.container.livenessProbe.httpGet.withPath('/api/health')
+          + k.core.v1.container.livenessProbe.httpGet.withPort(8080)
+          + k.core.v1.container.livenessProbe.withInitialDelaySeconds(30)
+          + k.core.v1.container.livenessProbe.withPeriodSeconds(15),
         ]
       )
       + k.apps.v1.deployment.spec.template.spec.withInitContainers([
         k.core.v1.container.new('spezistudyplatform-server-migrate', 'ghcr.io/stanfordspezi/spezistudyplatform-server:' + config.serverImageTag)
         + k.core.v1.container.withImagePullPolicy('Always')
         + k.core.v1.container.withCommand(['./SpeziStudyPlatformServer', 'migrate', '--yes'])
+        + k.core.v1.container.securityContext.withAllowPrivilegeEscalation(false)
+        + k.core.v1.container.securityContext.withRunAsNonRoot(true)
+        + k.core.v1.container.securityContext.capabilities.withDrop(['ALL'])
         + k.core.v1.container.withEnvFrom([
           k.core.v1.envFromSource.configMapRef.withName('spezistudyplatform-server-config'),
         ])

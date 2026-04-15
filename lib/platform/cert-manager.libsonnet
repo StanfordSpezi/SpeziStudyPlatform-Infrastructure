@@ -30,7 +30,7 @@
       [std.strReplace(resource.kind + '-' + resource.metadata.name, '/', '-')]: resource
       for resource in processedManifests
     } + (
-      if std.get(config, 'mode', 'DEV') == 'PRODUCTION' then {
+      if config.isProd then {
         // Production: Let's Encrypt ClusterIssuer
         'letsencrypt-prod-clusterissuer': {
           apiVersion: 'cert-manager.io/v1',

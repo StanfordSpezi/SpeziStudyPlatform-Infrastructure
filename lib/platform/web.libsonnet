@@ -50,18 +50,30 @@
       // Web Deployment
       webDeployment: k.apps.v1.deployment.new(
         'spezistudyplatform-web',
-        1,
+        config.replicas.web,
         [
           k.core.v1.container.new('spezistudyplatform-web-container', 'ghcr.io/stanfordspezi/spezistudyplatform-web:' + config.webImageTag)
           + k.core.v1.container.withImagePullPolicy('Always')
           + k.core.v1.container.withPorts([k.core.v1.containerPort.new(8080)])
+          + k.core.v1.container.resources.withRequests({ memory: '128Mi', cpu: '50m' })
           + k.core.v1.container.resources.withLimits({ memory: '1Gi', cpu: '100m' })
+          + k.core.v1.container.securityContext.withAllowPrivilegeEscalation(false)
+          + k.core.v1.container.securityContext.withRunAsNonRoot(true)
+          + k.core.v1.container.securityContext.capabilities.withDrop(['ALL'])
           + k.core.v1.container.withEnvFrom([
               k.core.v1.envFromSource.configMapRef.withName('spezistudyplatform-web-config'),
             ])
           + k.core.v1.container.withEnv([
               k.core.v1.envVar.fromSecretRef('OAUTH_CLIENT_SECRET', 'spezistudyplatform-web-secret', 'OAUTH_CLIENT_SECRET'),
-            ]),
+            ])
+          + k.core.v1.container.readinessProbe.httpGet.withPath('/')
+          + k.core.v1.container.readinessProbe.httpGet.withPort(8080)
+          + k.core.v1.container.readinessProbe.withInitialDelaySeconds(5)
+          + k.core.v1.container.readinessProbe.withPeriodSeconds(10)
+          + k.core.v1.container.livenessProbe.httpGet.withPath('/')
+          + k.core.v1.container.livenessProbe.httpGet.withPort(8080)
+          + k.core.v1.container.livenessProbe.withInitialDelaySeconds(10)
+          + k.core.v1.container.livenessProbe.withPeriodSeconds(15),
         ]
       )
       + k.apps.v1.deployment.mixin.metadata.withNamespace(config.namespace)

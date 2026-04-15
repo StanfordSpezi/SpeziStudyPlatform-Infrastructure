@@ -3,6 +3,74 @@
   local helm = tanka.helm.new(std.thisFile),
   withConfig(config)::
     {
+      // ExternalSecret for Keycloak admin password
+      keycloak_admin_secret: {
+        apiVersion: 'external-secrets.io/v1',
+        kind: 'ExternalSecret',
+        metadata: {
+          name: 'keycloak-admin-secret',
+          namespace: config.namespace,
+          annotations: {
+            'argocd.argoproj.io/compare-options': 'IgnoreExtraneous',
+          },
+        },
+        spec: {
+          refreshInterval: '15s',
+          secretStoreRef: { name: 'vault-backend', kind: 'ClusterSecretStore' },
+          target: { name: 'keycloak-admin-secret', creationPolicy: 'Owner' },
+          data: [{
+            secretKey: 'admin-password',
+            remoteRef: {
+              key: 'keycloak-admin',
+              property: 'admin-password',
+              conversionStrategy: 'Default',
+              decodingStrategy: 'None',
+              metadataPolicy: 'None',
+            },
+          }],
+        },
+      },
+
+      // ExternalSecret for Keycloak external database credentials
+      keycloak_db_secret: {
+        apiVersion: 'external-secrets.io/v1',
+        kind: 'ExternalSecret',
+        metadata: {
+          name: 'keycloak-db-secret',
+          namespace: config.namespace,
+          annotations: {
+            'argocd.argoproj.io/compare-options': 'IgnoreExtraneous',
+          },
+        },
+        spec: {
+          refreshInterval: '15s',
+          secretStoreRef: { name: 'vault-backend', kind: 'ClusterSecretStore' },
+          target: { name: 'keycloak-db-secret', creationPolicy: 'Owner' },
+          data: [
+            {
+              secretKey: 'username',
+              remoteRef: {
+                key: 'keycloak-db-credentials',
+                property: 'username',
+                conversionStrategy: 'Default',
+                decodingStrategy: 'None',
+                metadataPolicy: 'None',
+              },
+            },
+            {
+              secretKey: 'password',
+              remoteRef: {
+                key: 'keycloak-db-credentials',
+                property: 'password',
+                conversionStrategy: 'Default',
+                decodingStrategy: 'None',
+                metadataPolicy: 'None',
+              },
+            },
+          ],
+        },
+      },
+
       keycloak: helm.template('keycloak', '../../charts/keycloak', {
         namespace: config.namespace,
         version: '25.1.1',
@@ -26,7 +94,7 @@
               value: 'https://' + config.domain + '/auth',
             },
           ] + (
-            if std.get(config, 'mode', 'DEV') == 'PRODUCTION' then [
+            if config.isProd then [
               {
                 name: 'KC_PROXY_HEADERS',
                 value: 'xforwarded',
@@ -73,7 +141,8 @@
             },
           ],
           auth: {
-            adminPassword: 'admin123!',
+            existingSecret: 'keycloak-admin-secret',
+            passwordSecretKey: 'admin-password',
           },
           postgresql: {
             enabled: false,
@@ -81,9 +150,10 @@
           externalDatabase: {
             host: 'spezistudyplatform-db-rw',
             port: 5432,
-            user: 'keycloak',
-            password: 'keycloak123!',
             database: 'keycloak',
+            existingSecret: 'keycloak-db-secret',
+            existingSecretUserKey: 'username',
+            existingSecretPasswordKey: 'password',
           },
         },
       }),

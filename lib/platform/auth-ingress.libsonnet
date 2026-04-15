@@ -26,7 +26,7 @@
           namespace: config.namespace,
           annotations: {
             'ingress.kubernetes.io/ssl-redirect': 'true',
-            'cert-manager.io/cluster-issuer': if std.get(config, 'mode', 'DEV') == 'PRODUCTION' then 'letsencrypt-prod' else 'selfsigned-issuer',
+            'cert-manager.io/cluster-issuer': if config.isProd then 'letsencrypt-prod' else 'selfsigned-issuer',
             'ingress.kubernetes.io/proxy-buffer-size': '128k',
           },
         },
