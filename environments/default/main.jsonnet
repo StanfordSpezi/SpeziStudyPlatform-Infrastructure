@@ -1,4 +1,4 @@
-function(component=null, env='prod', localIP=null) {
+function(component=null, env='prod', localIP=null, vaultServer=null, vaultToken=null) {
   apiVersion: 'tanka.dev/v1alpha1',
   kind: 'Environment',
   metadata: {
@@ -14,7 +14,11 @@ function(component=null, env='prod', localIP=null) {
     injectLabels: false,
   },
   data:
-    local cfgLib = (import '../../lib/platform/config.libsonnet')();
+    local cfgLib = (import '../../lib/platform/config.libsonnet')(
+      staticIP=localIP,
+      vaultServer=vaultServer,
+      vaultToken=vaultToken,
+    );
     local config = if env == 'prod' then cfgLib.prod else cfgLib.localDev(localIP);
     local components = import '../../lib/platform/components.libsonnet';
     components.render(config, component),

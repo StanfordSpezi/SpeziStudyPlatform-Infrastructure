@@ -31,6 +31,21 @@
               name: 'LOCAL_IP',
               value: config.localIP,
             },
+          ] else [])
+          + (if config.isProd then [
+            {
+              name: 'VAULT_SERVER',
+              value: config.externalSecrets.vault.server,
+            },
+            {
+              name: 'VAULT_TOKEN',
+              valueFrom: {
+                secretKeyRef: {
+                  name: 'argocd-vault-credentials',
+                  key: 'token',
+                },
+              },
+            },
           ] else []),
         },
       },
@@ -57,6 +72,7 @@
       // Wave 0
       'namespace-app': app('namespace', 0, config, envPath, envPrefix),
       'cnpg-crds-app': app('cloudnative-pg-crds', 0, config, envPath, envPrefix),
+      'network-policies-app': app('network-policies', 0, config, envPath, envPrefix),
       'external-secrets-operator-app': {
         apiVersion: 'argoproj.io/v1alpha1',
         kind: 'Application',

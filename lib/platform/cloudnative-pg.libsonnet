@@ -20,14 +20,14 @@
         },
         spec: {
           imageName: 'ghcr.io/cloudnative-pg/postgresql:17-bullseye',
-          instances: 1,
+          instances: config.replicas.db,
           storage: {
             size: config.dbStorageSize,
           },
           monitoring: {
             enablePodMonitor: true,
           },
-          enableSuperuserAccess: true,
+          enableSuperuserAccess: config.isDev,
           bootstrap: {
             initdb: {
               database: 'spezistudyplatform',

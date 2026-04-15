@@ -12,6 +12,7 @@
     traefik: (import 'traefik.libsonnet').withConfig(config),
     auth: (import 'auth.libsonnet').withConfig(config),
     argocd: (import 'argocd.libsonnet').withConfig(config),
+    'network-policies': (import 'network-policies.libsonnet').withConfig(config),
   },
 
   // Render one component or all, based on the component parameter.

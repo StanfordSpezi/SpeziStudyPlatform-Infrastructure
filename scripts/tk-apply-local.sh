@@ -18,7 +18,7 @@ COMPONENT=""
 TK_APPLY_FLAGS=("--server-side" "--force")
 
 # Wave definitions (matches argocd-apps.libsonnet ordering)
-WAVE_0=(namespace cloudnative-pg-crds external-secrets)
+WAVE_0=(namespace cloudnative-pg-crds external-secrets network-policies)
 WAVE_1=(traefik cert-manager)
 WAVE_2=(cloudnative-pg)
 WAVE_3=(auth)

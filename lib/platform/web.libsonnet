@@ -55,8 +55,8 @@
           k.core.v1.container.new('spezistudyplatform-web-container', 'ghcr.io/stanfordspezi/spezistudyplatform-web:' + config.webImageTag)
           + k.core.v1.container.withImagePullPolicy('Always')
           + k.core.v1.container.withPorts([k.core.v1.containerPort.new(8080)])
-          + k.core.v1.container.resources.withRequests({ memory: '128Mi', cpu: '50m' })
-          + k.core.v1.container.resources.withLimits({ memory: '1Gi', cpu: '100m' })
+          + k.core.v1.container.resources.withRequests(config.resources.web.requests)
+          + k.core.v1.container.resources.withLimits(config.resources.web.limits)
           + k.core.v1.container.securityContext.withAllowPrivilegeEscalation(false)
           + k.core.v1.container.securityContext.withRunAsNonRoot(true)
           + k.core.v1.container.securityContext.capabilities.withDrop(['ALL'])
@@ -87,7 +87,13 @@
             effect: 'NoSchedule',
           },
         ])
-        + k.apps.v1.deployment.mixin.spec.strategy.withType('Recreate'),
+        + k.apps.v1.deployment.mixin.spec.strategy.withType(
+          if config.isProd then 'RollingUpdate' else 'Recreate'
+        )
+        + (if config.isProd then
+             k.apps.v1.deployment.mixin.spec.strategy.rollingUpdate.withMaxSurge('25%')
+             + k.apps.v1.deployment.mixin.spec.strategy.rollingUpdate.withMaxUnavailable(0)
+           else {}),
 
         // Web Service
         webService: k.core.v1.service.new(

@@ -57,14 +57,8 @@
           k.core.v1.container.new('spezistudyplatform-server-container', 'ghcr.io/stanfordspezi/spezistudyplatform-server:' + config.serverImageTag)
           + k.core.v1.container.withImagePullPolicy('Always')
           + k.core.v1.container.withPorts([k.core.v1.containerPort.new(8080)])
-          + k.core.v1.container.resources.withRequests({
-            memory: '512Mi',
-            cpu: '250m',
-          })
-          + k.core.v1.container.resources.withLimits({
-            memory: '2Gi',
-            cpu: '1',
-          })
+          + k.core.v1.container.resources.withRequests(config.resources.server.requests)
+          + k.core.v1.container.resources.withLimits(config.resources.server.limits)
           + k.core.v1.container.securityContext.withAllowPrivilegeEscalation(false)
           + k.core.v1.container.securityContext.withRunAsNonRoot(true)
           + k.core.v1.container.securityContext.capabilities.withDrop(['ALL'])
@@ -105,7 +99,13 @@
       + k.apps.v1.deployment.metadata.withLabels({ app: 'spezistudyplatform-server' })
       + k.apps.v1.deployment.spec.selector.withMatchLabels({ app: 'spezistudyplatform-server' })
       + k.apps.v1.deployment.spec.template.metadata.withLabels({ app: 'spezistudyplatform-server' })
-      + k.apps.v1.deployment.spec.strategy.withType('Recreate'),
+      + k.apps.v1.deployment.spec.strategy.withType(
+        if config.isProd then 'RollingUpdate' else 'Recreate'
+      )
+      + (if config.isProd then
+           k.apps.v1.deployment.spec.strategy.rollingUpdate.withMaxSurge('25%')
+           + k.apps.v1.deployment.spec.strategy.rollingUpdate.withMaxUnavailable(0)
+         else {}),
 
       server_service: k.core.v1.service.new(
         'spezistudyplatform-server-service',

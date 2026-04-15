@@ -1,4 +1,4 @@
-function(staticIP=null) {
+function(staticIP=null, vaultServer=null, vaultToken=null) {
   // Base configuration that can be customized per environment
   base:: {
     namespace: 'spezistudyplatform',
@@ -16,9 +16,21 @@ function(staticIP=null) {
     isProd:: self.mode == 'PRODUCTION',
 
     // Scaling and resource sizing
-    replicas: { server: 1, web: 1 },
+    replicas: { server: 1, web: 1, db: 1 },
     dbStorageSize: '1Gi',
     traefikLogLevel: 'INFO',
+
+    // Per-environment resource sizing
+    resources: {
+      server: {
+        requests: { memory: '256Mi', cpu: '100m' },
+        limits: { memory: '512Mi', cpu: '500m' },
+      },
+      web: {
+        requests: { memory: '64Mi', cpu: '25m' },
+        limits: { memory: '256Mi', cpu: '100m' },
+      },
+    },
 
     // External Secrets configuration (disabled by default)
     externalSecrets: {
@@ -39,25 +51,56 @@ function(staticIP=null) {
   prod:: self.base {
     domain: 'platform.spezi.stanford.edu',
     loadBalancerIP: staticIP,
-    storageClass: null,  // Must be overridden for production deployments
+    storageClass: 'standard-rw',
     mode: 'PRODUCTION',
     caCrt: null,
-    replicas: { server: 2, web: 2 },
+    webImageTag: 'v0.1.0',
+    serverImageTag: 'v0.1.0',
+    replicas: { server: 2, web: 2, db: 3 },
+    dbStorageSize: '50Gi',
+    traefikLogLevel: 'WARN',
+    resources+: {
+      server+: {
+        requests: { memory: '512Mi', cpu: '250m' },
+        limits: { memory: '2Gi', cpu: '1' },
+      },
+      web+: {
+        requests: { memory: '128Mi', cpu: '50m' },
+        limits: { memory: '1Gi', cpu: '100m' },
+      },
+    },
+    externalSecrets+: {
+      enabled: true,
+      vault+: {
+        server: if vaultServer != null then vaultServer else error 'vaultServer must be provided for production',
+        rootToken: if vaultToken != null then vaultToken else error 'vaultToken must be provided for production',
+      },
+    },
+    assert self.webImageTag != 'latest' : 'Pin image tags in production (webImageTag)',
+    assert self.serverImageTag != 'latest' : 'Pin image tags in production (serverImageTag)',
+    assert self.externalSecrets.vault.rootToken != 'dev-only-token' : 'Do not use dev-only-token in production',
+  },
+
+  // Production bootstrap: only generates ArgoCD Application manifests,
+  // so vault/image-tag values are not rendered into workloads.
+  prodBootstrap:: self.base {
+    domain: 'platform.spezi.stanford.edu',
+    loadBalancerIP: staticIP,
+    storageClass: 'standard-rw',
+    mode: 'PRODUCTION',
+    caCrt: null,
+    webImageTag: 'bootstrap',
+    serverImageTag: 'bootstrap',
+    replicas: { server: 2, web: 2, db: 3 },
     dbStorageSize: '50Gi',
     traefikLogLevel: 'WARN',
     externalSecrets+: {
       enabled: true,
       vault+: {
-        // Production must override these to point to a real Vault instance.
-        // The assertions below prevent the dev-only defaults from being used.
-        server: null,
-        rootToken: null,
+        server: 'https://vault.example.com:8200',
+        rootToken: 'bootstrap-placeholder',
       },
     },
-    assert self.webImageTag != 'latest' : 'Pin image tags in production (webImageTag)',
-    assert self.serverImageTag != 'latest' : 'Pin image tags in production (serverImageTag)',
-    assert self.externalSecrets.vault.server != null : 'externalSecrets.vault.server must be set for production',
-    assert self.externalSecrets.vault.rootToken != 'dev-only-token' : 'Do not use dev-only-token in production',
   },
 
   // Local development configuration
