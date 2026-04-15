@@ -24,7 +24,7 @@
             },
             {
               name: 'ENVIRONMENT',
-              value: if std.get(config, 'mode', 'PRODUCTION') == 'PRODUCTION' then 'default' else 'local-dev',
+              value: 'default',
             },
           ] + (if std.get(config, 'localIP', null) != null then [
             {
@@ -52,7 +52,7 @@
   },
   withConfig(config)::
     local envPath = '.';
-    local envPrefix = if std.get(config, 'mode', 'PRODUCTION') == 'PRODUCTION' then 'prod' else 'local-dev';
+    local envPrefix = if std.get(config, 'mode', 'PRODUCTION') == 'PRODUCTION' then 'prod' else 'dev';
     std.objectValues({
       // Wave 0
       'namespace-app': app('namespace', 0, config, envPath, envPrefix),

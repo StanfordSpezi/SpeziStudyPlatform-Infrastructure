@@ -608,11 +608,12 @@ class LocalEnvironmentSetup(EnvironmentSetupBase):
 
     def tk_apply_component(self, component: str):
         """Apply a single Tanka component to the local-dev environment."""
-        env_path = self.script_dir / "environments" / "local-dev"
+        env_path = self.script_dir / "environments" / "default"
         cmd = [
             "tk",
             "apply",
             str(env_path),
+            "--tla-str", "env=dev",
             "--tla-str", f"localIP={self.local_ip}",
             "--tla-str", f"component={component}",
             "--server-side",
@@ -653,7 +654,7 @@ class LocalEnvironmentSetup(EnvironmentSetupBase):
         self.local_ip = ""
 
     def ensure_kind_cluster(self):
-        config = self.script_dir / "local-dev" / "kind-config.yaml"
+        config = self.script_dir / "config" / "kind-config.yaml"
         logging.info(
             "Ensuring KIND cluster '%s' is available (--force-recreate-kind=%s)",
             self.kind_cluster_name,

@@ -68,7 +68,8 @@ detect_ip() {
 apply_component() {
   local component="$1"
   local cmd=(
-    tk apply "$REPO_ROOT/environments/local-dev"
+    tk apply "$REPO_ROOT/environments/default"
+    --tla-str "env=dev"
     --tla-str "localIP=$LOCAL_IP"
     --tla-str "component=$component"
     "${TK_APPLY_FLAGS[@]}"

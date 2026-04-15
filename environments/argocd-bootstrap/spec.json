@@ -1,7 +1,0 @@
-{
-  "apiServer": "https://kubernetes.default.svc",
-  "namespace": "argocd",
-  "applyStrategy": "server",
-  "diffStrategy": "server",
-  "injectLabels": false
-}
