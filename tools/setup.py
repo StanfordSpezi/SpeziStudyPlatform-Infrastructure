@@ -108,17 +108,32 @@ def step_bootstrap_config(env: str):
         kubectl("apply", "-f", "-", input=filtered, text=True)
 
 
-def step_root_application(env: str, branch: str):
-    header("Step 3/3: Apply root Application")
+def step_apply_applications(env: str, branch: str):
+    """Apply ArgoCD Applications.
+
+    For dev: applies child Applications directly (no root app) with
+    targetRevision patched to the working branch. This avoids the
+    circular problem where a root app would revert children back to main.
+
+    For prod: applies the root Application which manages everything
+    via the app-of-apps pattern from the main branch.
+    """
+    header("Step 3/3: Apply ArgoCD Applications")
+
+    if env == "prod":
+        root_yaml = (ROOT / "argocd-apps" / env / "root-app.yaml").read_text()
+        kubectl("apply", "-f", "-", input=root_yaml, text=True)
+        return
+
+    # Dev: apply child Applications directly with branch override.
+    # argocd-apps/dev/kustomization.yaml excludes root-app.yaml so
+    # there is no self-managing root app that would revert children.
     rendered = subprocess.run(
         ["kubectl", "kustomize", str(ROOT / "argocd-apps" / env)],
         capture_output=True, text=True, check=True,
     ).stdout
-
-    if env == "dev":
-        rendered = rendered.replace(
-            "targetRevision: main", f"targetRevision: {branch}")
-
+    rendered = rendered.replace(
+        "targetRevision: main", f"targetRevision: {branch}")
     kubectl("apply", "-f", "-", input=rendered, text=True)
 
 
@@ -149,7 +164,7 @@ def main():
 
     step_install_argocd()
     step_bootstrap_config(args.env)
-    step_root_application(args.env, branch)
+    step_apply_applications(args.env, branch)
 
     domain = "localhost" if args.env == "dev" else "platform.spezi.stanford.edu"
     print(f"""
