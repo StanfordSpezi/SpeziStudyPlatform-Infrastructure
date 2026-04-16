@@ -107,6 +107,13 @@ def step_bootstrap_config(env: str):
         filtered = "\n---\n".join(docs)
         kubectl("apply", "-f", "-", input=filtered, text=True)
 
+    # ArgoCD server must restart to pick up ConfigMap changes
+    # (basehref, rootpath, insecure, OIDC config).
+    print("\nRestarting ArgoCD server to apply config...")
+    kubectl("rollout", "restart", "deployment/argocd-server", "-n", "argocd")
+    kubectl("rollout", "status", "deployment/argocd-server",
+            "-n", "argocd", "--timeout=120s")
+
 
 def step_apply_applications(env: str, branch: str):
     """Apply ArgoCD Applications.
