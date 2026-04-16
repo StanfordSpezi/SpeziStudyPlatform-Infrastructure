@@ -3,9 +3,6 @@ kind: Job
 metadata:
   name: vault-server-secret-setup
   namespace: vault
-  annotations:
-    argocd.argoproj.io/hook: Sync
-    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 spec:
   template:
     spec:
@@ -28,9 +25,6 @@ kind: Job
 metadata:
   name: vault-web-secret-setup
   namespace: vault
-  annotations:
-    argocd.argoproj.io/hook: Sync
-    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 spec:
   template:
     spec:
@@ -53,9 +47,6 @@ kind: Job
 metadata:
   name: vault-db-secret-setup
   namespace: vault
-  annotations:
-    argocd.argoproj.io/hook: Sync
-    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 spec:
   template:
     spec:
@@ -78,9 +69,6 @@ kind: Job
 metadata:
   name: vault-keycloak-admin-secret-setup
   namespace: vault
-  annotations:
-    argocd.argoproj.io/hook: Sync
-    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 spec:
   template:
     spec:
@@ -103,9 +91,6 @@ kind: Job
 metadata:
   name: vault-keycloak-db-secret-setup
   namespace: vault
-  annotations:
-    argocd.argoproj.io/hook: Sync
-    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 spec:
   template:
     spec:
