@@ -78,8 +78,34 @@ def step_install_argocd():
 
 
 def step_bootstrap_config(env: str):
+    """Pre-apply only ConfigMaps and Namespace from bootstrap overlay.
+
+    Certificate and IngressRoute CRDs don't exist yet (cert-manager and
+    Traefik are installed later by ArgoCD). The full bootstrap overlay is
+    synced by the ArgoCD bootstrap Application after operators are ready.
+    """
     header("Step 2/3: Pre-apply bootstrap config")
-    kubectl("apply", "-k", str(ROOT / "bootstrap" / env))
+    rendered = subprocess.run(
+        ["kubectl", "kustomize", str(ROOT / "bootstrap" / env)],
+        capture_output=True, text=True, check=True,
+    ).stdout
+
+    safe_kinds = {"ConfigMap", "Namespace"}
+    docs = []
+    for doc in rendered.split("---"):
+        doc = doc.strip()
+        if not doc:
+            continue
+        for line in doc.splitlines():
+            if line.startswith("kind:"):
+                kind = line.split(":", 1)[1].strip()
+                if kind in safe_kinds:
+                    docs.append(doc)
+                break
+
+    if docs:
+        filtered = "\n---\n".join(docs)
+        kubectl("apply", "-f", "-", input=filtered, text=True)
 
 
 def step_root_application(env: str, branch: str):
