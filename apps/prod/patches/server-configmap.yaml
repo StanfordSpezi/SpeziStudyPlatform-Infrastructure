@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spezistudyplatform-server-config
+  namespace: spezistudyplatform
+data:
+  APP_ENVIRONMENT: production

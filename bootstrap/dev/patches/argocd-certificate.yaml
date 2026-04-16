@@ -1,0 +1,10 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: argocd-main-tls-cert
+  namespace: argocd
+spec:
+  issuerRef:
+    name: selfsigned-issuer
+  dnsNames:
+    - localhost

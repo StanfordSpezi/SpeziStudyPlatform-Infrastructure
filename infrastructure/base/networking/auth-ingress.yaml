@@ -1,0 +1,21 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: auth-ingress
+  namespace: spezistudyplatform
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - kind: Rule
+      match: Host(`DOMAIN_PLACEHOLDER`) && PathPrefix(`/auth`)
+      priority: 99
+      services:
+        - name: keycloak
+          port: 80
+      middlewares:
+        - name: keycloak-headers
+  tls:
+    secretName: spezistudyplatform-main-tls-secret

@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spezistudyplatform-server
+  namespace: spezistudyplatform
+  labels:
+    app: spezistudyplatform-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spezistudyplatform-server
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: spezistudyplatform-server
+    spec:
+      initContainers:
+        - name: spezistudyplatform-server-migrate
+          image: ghcr.io/stanfordspezi/spezistudyplatform-server:latest
+          imagePullPolicy: Always
+          command: ["./SpeziStudyPlatformServer", "migrate", "--yes"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 999
+            capabilities:
+              drop:
+                - ALL
+          envFrom:
+            - configMapRef:
+                name: spezistudyplatform-server-config
+          env:
+            - name: DATABASE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: spezistudyplatform-postgres-credentials
+                  key: username
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: spezistudyplatform-postgres-credentials
+                  key: password
+      containers:
+        - name: spezistudyplatform-server-container
+          image: ghcr.io/stanfordspezi/spezistudyplatform-server:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: 100m
+            limits:
+              memory: 512Mi
+              cpu: 500m
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 999
+            capabilities:
+              drop:
+                - ALL
+          envFrom:
+            - configMapRef:
+                name: spezistudyplatform-server-config
+          env:
+            - name: DATABASE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: spezistudyplatform-postgres-credentials
+                  key: username
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: spezistudyplatform-postgres-credentials
+                  key: password
+            - name: KEYCLOAK_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: spezistudyplatform-server-secret
+                  key: OAUTH_CLIENT_SECRET
+          readinessProbe:
+            httpGet:
+              path: /api/v0/health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/v0/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 15

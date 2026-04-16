@@ -1,0 +1,11 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: spezistudyplatform-ingress
+  namespace: spezistudyplatform
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  routes:
+    - match: "Host(`platform.spezi.stanford.edu`)"
+    - match: "Host(`platform.spezi.stanford.edu`) && PathPrefix(`/api`)"

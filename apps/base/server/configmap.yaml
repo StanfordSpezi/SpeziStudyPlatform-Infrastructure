@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spezistudyplatform-server-config
+  namespace: spezistudyplatform
+data:
+  DATABASE_HOST: spezistudyplatform-db-rw
+  DATABASE_NAME: spezistudyplatform
+  KEYCLOAK_URL: http://keycloak.spezistudyplatform.svc.cluster.local/auth
+  KEYCLOAK_REALM: spezistudyplatform
+  KEYCLOAK_CLIENT_ID: spezistudyplatform-server
+  KEYCLOAK_RESEARCHER_ROLE: spezistudyplatform-researcher
+  KEYCLOAK_PARTICIPANT_ROLE: spezistudyplatform-participant
+  APP_ENVIRONMENT: production

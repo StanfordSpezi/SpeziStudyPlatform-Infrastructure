@@ -1,0 +1,43 @@
+service:
+  enabled: true
+  type: LoadBalancer
+logs:
+  general:
+    level: WARN
+  access:
+    enabled: true
+    fields:
+      headers:
+        defaultmode: keep
+persistence:
+  enabled: true
+  name: traefik-data
+  accessMode: ReadWriteOnce
+  size: 1Gi
+  storageClass: standard-rw
+  path: /data
+  annotations: {}
+deployment:
+  hostNetwork: false
+  initContainers:
+    - name: volume-permissions
+      image: traefik:v2.10.4
+      command: ["sh", "-c", "touch /data/acme.json; chown 65532:65532 /data/acme.json; chmod -v 600 /data/acme.json"]
+      securityContext:
+        runAsNonRoot: false
+        runAsGroup: 0
+        runAsUser: 0
+      volumeMounts:
+        - name: traefik-data
+          mountPath: /data
+          readOnly: false
+podSecurityContext:
+  fsGroupChangePolicy: OnRootMismatch
+  runAsGroup: 65532
+  runAsNonRoot: true
+  runAsUser: 65532
+ports: {}
+ingressRoute:
+  dashboard:
+    enabled: false
+additionalArguments: []

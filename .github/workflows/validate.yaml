@@ -1,0 +1,55 @@
+name: Validate Manifests
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  kustomize-build:
+    name: Kustomize Build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        overlay:
+          - infrastructure/dev
+          - infrastructure/prod
+          - apps/dev
+          - apps/prod
+          - bootstrap/dev
+          - bootstrap/prod
+          - argocd-apps/dev
+          - argocd-apps/prod
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build overlay
+        run: kubectl kustomize ${{ matrix.overlay }}
+
+  kubeconform:
+    name: Schema Validation
+    runs-on: ubuntu-latest
+    needs: kustomize-build
+    strategy:
+      matrix:
+        overlay:
+          - infrastructure/dev
+          - infrastructure/prod
+          - apps/dev
+          - apps/prod
+          - bootstrap/dev
+          - bootstrap/prod
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install kubeconform
+        run: |
+          curl -sSL https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz \
+            | tar xz -C /usr/local/bin
+      - name: Validate schemas
+        run: |
+          kubectl kustomize ${{ matrix.overlay }} | kubeconform \
+            -strict \
+            -summary \
+            -output text \
+            -skip CustomResourceDefinition \
+            -ignore-missing-schemas

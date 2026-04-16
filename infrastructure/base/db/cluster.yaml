@@ -1,0 +1,22 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: spezistudyplatform-db
+  namespace: spezistudyplatform
+spec:
+  imageName: ghcr.io/cloudnative-pg/postgresql:17-bullseye
+  instances: 1
+  storage:
+    size: 1Gi
+  monitoring:
+    enablePodMonitor: true
+  enableSuperuserAccess: false
+  bootstrap:
+    initdb:
+      database: spezistudyplatform
+      owner: spezistudyplatform
+      secret:
+        name: spezistudyplatform-postgres-credentials
+      postInitSQL:
+        - CREATE ROLE keycloak WITH LOGIN PASSWORD 'keycloak123!'
+        - CREATE DATABASE keycloak OWNER keycloak

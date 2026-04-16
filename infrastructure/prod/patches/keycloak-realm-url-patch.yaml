@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: keycloak-realm-url
+  namespace: spezistudyplatform
+stringData:
+  web-url: https://platform.spezi.stanford.edu

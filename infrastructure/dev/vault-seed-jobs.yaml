@@ -1,0 +1,124 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: vault-server-secret-setup
+  namespace: vault
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: vault-setup
+          image: hashicorp/vault:1.15
+          env:
+            - name: VAULT_ADDR
+              value: http://vault.vault.svc.cluster.local:8200
+            - name: VAULT_TOKEN
+              value: dev-only-token
+          command:
+            - sh
+            - -c
+            - "sleep 10 && (vault kv get secret/spezistudyplatform-server >/dev/null 2>&1 || vault kv put secret/spezistudyplatform-server OAUTH_CLIENT_SECRET=change-me-in-production) || true"
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: vault-web-secret-setup
+  namespace: vault
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: vault-setup
+          image: hashicorp/vault:1.15
+          env:
+            - name: VAULT_ADDR
+              value: http://vault.vault.svc.cluster.local:8200
+            - name: VAULT_TOKEN
+              value: dev-only-token
+          command:
+            - sh
+            - -c
+            - "sleep 10 && (vault kv get secret/spezistudyplatform-web >/dev/null 2>&1 || vault kv put secret/spezistudyplatform-web OAUTH_CLIENT_SECRET=dummy-web-secret) || true"
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: vault-db-secret-setup
+  namespace: vault
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: vault-setup
+          image: hashicorp/vault:1.15
+          env:
+            - name: VAULT_ADDR
+              value: http://vault.vault.svc.cluster.local:8200
+            - name: VAULT_TOKEN
+              value: dev-only-token
+          command:
+            - sh
+            - -c
+            - "sleep 10 && (vault kv get secret/spezistudyplatform-postgres-credentials >/dev/null 2>&1 || vault kv put secret/spezistudyplatform-postgres-credentials username=spezistudyplatform password=spezistudyplatform1!2@) || true"
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: vault-keycloak-admin-secret-setup
+  namespace: vault
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: vault-setup
+          image: hashicorp/vault:1.15
+          env:
+            - name: VAULT_ADDR
+              value: http://vault.vault.svc.cluster.local:8200
+            - name: VAULT_TOKEN
+              value: dev-only-token
+          command:
+            - sh
+            - -c
+            - "sleep 10 && (vault kv get secret/keycloak-admin >/dev/null 2>&1 || vault kv put secret/keycloak-admin username=admin password=admin123!) || true"
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: vault-keycloak-db-secret-setup
+  namespace: vault
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: vault-setup
+          image: hashicorp/vault:1.15
+          env:
+            - name: VAULT_ADDR
+              value: http://vault.vault.svc.cluster.local:8200
+            - name: VAULT_TOKEN
+              value: dev-only-token
+          command:
+            - sh
+            - -c
+            - "sleep 10 && (vault kv get secret/keycloak-db-credentials >/dev/null 2>&1 || vault kv put secret/keycloak-db-credentials username=keycloak password=keycloak123!) || true"

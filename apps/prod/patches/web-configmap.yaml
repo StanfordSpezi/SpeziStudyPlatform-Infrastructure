@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spezistudyplatform-web-config
+  namespace: spezistudyplatform
+data:
+  VITE_API_BASE_PATH: https://platform.spezi.stanford.edu
+  VITE_KEYCLOAK_URL: https://platform.spezi.stanford.edu/auth
+  VITE_KEYCLOAK_REALM: spezistudyplatform
+  VITE_KEYCLOAK_CLIENT_ID: spezistudyplatform-web

@@ -1,25 +1,25 @@
+# Secrets
 *secret.yaml
-.terraform
-.terraform-local
-.terraform.lock.hcl
-.tf
-*.tfstate
-*.tfstate.*
-*.tfstate.backup
 
+# Python
 __pycache__/
 *.py[cod]
 .venv/
-.env
 .python-version
-.ruff_cache/
-.pytest_cache/
 *.egg-info/
 .mypy_cache/
+.ruff_cache/
+.pytest_cache/
 .coverage
-.kind-kubeconfig
-.local-repos/
-import.log
 
+# Local dev
+.kind-kubeconfig
+.env
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+
+# macOS
 .DS_Store
-*.DS_Store

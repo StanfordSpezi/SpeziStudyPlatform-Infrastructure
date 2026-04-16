@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spezistudyplatform-web-config
+  namespace: spezistudyplatform
+data:
+  VITE_API_BASE_PATH: https://DOMAIN_PLACEHOLDER
+  VITE_KEYCLOAK_URL: https://DOMAIN_PLACEHOLDER/auth
+  VITE_KEYCLOAK_REALM: spezistudyplatform
+  VITE_KEYCLOAK_CLIENT_ID: spezistudyplatform-web
