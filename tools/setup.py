@@ -70,6 +70,9 @@ def step_install_argocd():
     helm("upgrade", "--install", "argocd", "argo/argo-cd",
          "--namespace=argocd", "--create-namespace",
          f"--version={ARGOCD_CHART_VERSION}",
+         "--set", "configs.params.server\\.insecure=true",
+         "--set", "configs.params.server\\.basehref=/argo",
+         "--set", "configs.params.server\\.rootpath=/argo",
          "--wait", "--timeout=5m")
 
     print("\nWaiting for ArgoCD server...")
@@ -106,13 +109,6 @@ def step_bootstrap_config(env: str):
     if docs:
         filtered = "\n---\n".join(docs)
         kubectl("apply", "-f", "-", input=filtered, text=True)
-
-    # ArgoCD server must restart to pick up ConfigMap changes
-    # (basehref, rootpath, insecure, OIDC config).
-    print("\nRestarting ArgoCD server to apply config...")
-    kubectl("rollout", "restart", "deployment/argocd-server", "-n", "argocd")
-    kubectl("rollout", "status", "deployment/argocd-server",
-            "-n", "argocd", "--timeout=120s")
 
 
 def step_apply_applications(env: str, branch: str):
