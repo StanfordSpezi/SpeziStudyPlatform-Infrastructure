@@ -5,3 +5,4 @@ resources:
   - service.yaml
   - configmap.yaml
   - external-secret.yaml
+  - service-account.yaml

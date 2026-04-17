@@ -11,4 +11,4 @@ data:
   KEYCLOAK_CLIENT_ID: spezistudyplatform-server
   KEYCLOAK_RESEARCHER_ROLE: spezistudyplatform-researcher
   KEYCLOAK_PARTICIPANT_ROLE: spezistudyplatform-participant
-  APP_ENVIRONMENT: production
+  APP_ENVIRONMENT: development

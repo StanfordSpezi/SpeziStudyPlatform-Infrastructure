@@ -17,6 +17,7 @@ spec:
       labels:
         app: spezistudyplatform-server
     spec:
+      serviceAccountName: spezistudyplatform-server
       initContainers:
         - name: spezistudyplatform-server-migrate
           image: ghcr.io/stanfordspezi/spezistudyplatform-server:latest
@@ -89,15 +90,20 @@ spec:
                 secretKeyRef:
                   name: spezistudyplatform-server-secret
                   key: OAUTH_CLIENT_SECRET
+          startupProbe:
+            httpGet:
+              path: /api/v0/health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 30
           readinessProbe:
             httpGet:
               path: /api/v0/health
               port: 8080
-            initialDelaySeconds: 10
             periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /api/v0/health
               port: 8080
-            initialDelaySeconds: 30
             periodSeconds: 15

@@ -15,14 +15,18 @@ spec:
       labels:
         app: keycloak
     spec:
-      tolerations:
-        - key: node-role.kubernetes.io/control-plane
-          operator: Exists
-          effect: NoSchedule
+      serviceAccountName: keycloak
       containers:
         - name: keycloak
           image: quay.io/keycloak/keycloak:26.6.1
           args: ["start"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 1000
+            capabilities:
+              drop:
+                - ALL
           env:
             - name: KC_HOSTNAME
               value: DOMAIN_PLACEHOLDER

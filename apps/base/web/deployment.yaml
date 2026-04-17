@@ -17,10 +17,7 @@ spec:
       labels:
         app: spezistudyplatform-web
     spec:
-      tolerations:
-        - key: node-role.kubernetes.io/control-plane
-          operator: Exists
-          effect: NoSchedule
+      serviceAccountName: spezistudyplatform-web
       containers:
         - name: spezistudyplatform-web-container
           image: ghcr.io/stanfordspezi/spezistudyplatform-web:latest
@@ -44,15 +41,20 @@ spec:
           envFrom:
             - configMapRef:
                 name: spezistudyplatform-web-config
+          startupProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 2
+            periodSeconds: 5
+            failureThreshold: 12
           readinessProbe:
             httpGet:
               path: /
               port: 8080
-            initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /
               port: 8080
-            initialDelaySeconds: 10
             periodSeconds: 15
