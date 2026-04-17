@@ -10,6 +10,7 @@ resources:
   - keycloak-realm-import-job.yaml
 patches:
   - path: patches/db-cluster.yaml
+  - path: patches/keycloak-db-cluster.yaml
   - path: patches/vault-token-secret.yaml
   - path: patches/main-ingress.yaml
   - path: patches/auth-ingress.yaml

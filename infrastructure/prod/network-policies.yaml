@@ -97,7 +97,7 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      cnpg.io/cluster: spezistudyplatform-db
+      cnpg.io/cluster: keycloak-db
   policyTypes:
     - Ingress
   ingress:
@@ -105,6 +105,26 @@ spec:
         - podSelector:
             matchLabels:
               app: keycloak
+      ports:
+        - protocol: TCP
+          port: 5432
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-keycloak-cnpg-replication
+  namespace: spezistudyplatform
+spec:
+  podSelector:
+    matchLabels:
+      cnpg.io/cluster: keycloak-db
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              cnpg.io/cluster: keycloak-db
       ports:
         - protocol: TCP
           port: 5432

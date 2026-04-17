@@ -8,6 +8,7 @@ resources:
   - keycloak-config-cli-job.yaml
 patches:
   - path: patches/db-cluster.yaml
+  - path: patches/keycloak-db-cluster.yaml
   - path: patches/vault-token-secret.yaml
   - path: patches/keycloak.yaml
   - path: patches/keycloak-realm-url-patch.yaml

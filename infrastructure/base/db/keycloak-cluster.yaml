@@ -1,7 +1,7 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: spezistudyplatform-db
+  name: keycloak-db
   namespace: spezistudyplatform
 spec:
   imageName: ghcr.io/cloudnative-pg/postgresql:17-bullseye
@@ -13,7 +13,7 @@ spec:
   enableSuperuserAccess: false
   bootstrap:
     initdb:
-      database: spezistudyplatform
-      owner: spezistudyplatform
+      database: keycloak
+      owner: keycloak
       secret:
-        name: spezistudyplatform-postgres-credentials
+        name: keycloak-postgres-credentials
