@@ -4,9 +4,10 @@ metadata:
   name: vault-server-secret-setup
   namespace: vault
 spec:
+  backoffLimit: 5
   template:
     spec:
-      restartPolicy: Never
+      restartPolicy: OnFailure
       containers:
         - name: vault-setup
           image: hashicorp/vault:1.15
@@ -18,7 +19,10 @@ spec:
           command:
             - sh
             - -c
-            - "sleep 10 && (vault kv get secret/spezistudyplatform-server >/dev/null 2>&1 || vault kv put secret/spezistudyplatform-server OAUTH_CLIENT_SECRET=change-me-in-production) || true"
+            - |
+              until vault status >/dev/null 2>&1; do echo "Waiting for Vault..."; sleep 2; done
+              vault kv get secret/spezistudyplatform-server >/dev/null 2>&1 || \
+                vault kv put secret/spezistudyplatform-server OAUTH_CLIENT_SECRET=change-me-in-production
 ---
 apiVersion: batch/v1
 kind: Job
@@ -26,9 +30,10 @@ metadata:
   name: vault-db-secret-setup
   namespace: vault
 spec:
+  backoffLimit: 5
   template:
     spec:
-      restartPolicy: Never
+      restartPolicy: OnFailure
       containers:
         - name: vault-setup
           image: hashicorp/vault:1.15
@@ -40,7 +45,10 @@ spec:
           command:
             - sh
             - -c
-            - "sleep 10 && (vault kv get secret/spezistudyplatform-postgres-credentials >/dev/null 2>&1 || vault kv put secret/spezistudyplatform-postgres-credentials username=spezistudyplatform password=spezistudyplatform1!2@) || true"
+            - |
+              until vault status >/dev/null 2>&1; do echo "Waiting for Vault..."; sleep 2; done
+              vault kv get secret/spezistudyplatform-postgres-credentials >/dev/null 2>&1 || \
+                vault kv put secret/spezistudyplatform-postgres-credentials username=spezistudyplatform password=spezistudyplatform1!2@
 ---
 apiVersion: batch/v1
 kind: Job
@@ -48,9 +56,10 @@ metadata:
   name: vault-keycloak-admin-secret-setup
   namespace: vault
 spec:
+  backoffLimit: 5
   template:
     spec:
-      restartPolicy: Never
+      restartPolicy: OnFailure
       containers:
         - name: vault-setup
           image: hashicorp/vault:1.15
@@ -62,7 +71,10 @@ spec:
           command:
             - sh
             - -c
-            - "sleep 10 && (vault kv get secret/keycloak-admin >/dev/null 2>&1 || vault kv put secret/keycloak-admin username=admin password=admin123!) || true"
+            - |
+              until vault status >/dev/null 2>&1; do echo "Waiting for Vault..."; sleep 2; done
+              vault kv get secret/keycloak-admin >/dev/null 2>&1 || \
+                vault kv put secret/keycloak-admin username=admin password=admin123!
 ---
 apiVersion: batch/v1
 kind: Job
@@ -70,9 +82,10 @@ metadata:
   name: vault-keycloak-db-secret-setup
   namespace: vault
 spec:
+  backoffLimit: 5
   template:
     spec:
-      restartPolicy: Never
+      restartPolicy: OnFailure
       containers:
         - name: vault-setup
           image: hashicorp/vault:1.15
@@ -84,4 +97,7 @@ spec:
           command:
             - sh
             - -c
-            - "sleep 10 && (vault kv get secret/keycloak-db-credentials >/dev/null 2>&1 || vault kv put secret/keycloak-db-credentials username=keycloak password=keycloak123!) || true"
+            - |
+              until vault status >/dev/null 2>&1; do echo "Waiting for Vault..."; sleep 2; done
+              vault kv get secret/keycloak-db-credentials >/dev/null 2>&1 || \
+                vault kv put secret/keycloak-db-credentials username=keycloak password=keycloak123!

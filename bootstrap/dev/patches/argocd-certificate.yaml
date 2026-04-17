@@ -4,6 +4,7 @@ metadata:
   name: argocd-main-tls-cert
   namespace: argocd
 spec:
+  commonName: localhost
   issuerRef:
     name: selfsigned-issuer
   dnsNames:

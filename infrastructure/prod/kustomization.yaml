@@ -6,12 +6,32 @@ resources:
   - tls-certificate.yaml
   - network-policies.yaml
   - keycloak-config-cli-job.yaml
-  - pdb.yaml
+  - cluster-secret-store.yaml
+  - external-secrets-sa.yaml
 patches:
   - path: patches/db-cluster.yaml
   - path: patches/keycloak-db-cluster.yaml
-  - path: patches/vault-token-secret.yaml
   - path: patches/keycloak.yaml
-  - path: patches/keycloak-realm-url-patch.yaml
-  - path: patches/main-ingress.yaml
-  - path: patches/auth-ingress.yaml
+  - target:
+      kind: IngressRoute
+      name: spezistudyplatform-ingress
+    patch: |
+      - op: replace
+        path: /spec/routes/0/match
+        value: "Host(`platform.spezi.stanford.edu`)"
+      - op: replace
+        path: /spec/routes/1/match
+        value: "Host(`platform.spezi.stanford.edu`) && PathPrefix(`/api`)"
+      - op: replace
+        path: /metadata/annotations/cert-manager.io~1cluster-issuer
+        value: letsencrypt-prod
+  - target:
+      kind: IngressRoute
+      name: auth-ingress
+    patch: |
+      - op: replace
+        path: /spec/routes/0/match
+        value: "Host(`platform.spezi.stanford.edu`) && PathPrefix(`/auth`)"
+      - op: replace
+        path: /metadata/annotations/cert-manager.io~1cluster-issuer
+        value: letsencrypt-prod

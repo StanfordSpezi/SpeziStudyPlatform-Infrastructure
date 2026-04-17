@@ -43,7 +43,7 @@ validate: ## Validate all Kustomize overlays build cleanly
 	@echo "All overlays build successfully."
 
 lint: ## Run kubeconform schema validation on all overlays
-	@for overlay in infrastructure/dev infrastructure/prod apps/dev apps/prod bootstrap/dev bootstrap/prod; do \
+	@for overlay in infrastructure/dev infrastructure/prod apps/dev apps/prod bootstrap/dev bootstrap/prod argocd-apps/dev argocd-apps/prod; do \
 		echo "Validating $$overlay..."; \
 		kubectl kustomize $$overlay | kubeconform -strict -summary -output text; \
 	done

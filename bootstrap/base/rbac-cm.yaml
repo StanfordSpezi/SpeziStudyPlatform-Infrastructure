@@ -10,4 +10,4 @@ data:
     p, role:admin, certificates, *, *, allow
     p, role:admin, clusters, *, *, allow
     p, role:admin, repositories, *, *, allow
-    g, ArgoCDAdmins, role:admin
+    g, /ArgoCDAdmins, role:admin

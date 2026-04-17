@@ -17,7 +17,7 @@ spec:
           port: 80
     - kind: Rule
       match: Host(`DOMAIN_PLACEHOLDER`) && PathPrefix(`/argo`) && Header(`Content-Type`, `application/grpc`)
-      priority: 10
+      priority: 11
       services:
         - name: argocd-server
           port: 80

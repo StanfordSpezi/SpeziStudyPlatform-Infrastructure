@@ -4,5 +4,4 @@ resources:
   - admin-secret-es.yaml
   - db-secret-es.yaml
   - keycloak.yaml
-  - realm-url.yaml
   - service-account.yaml

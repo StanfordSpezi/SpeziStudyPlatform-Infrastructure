@@ -6,13 +6,13 @@ resources:
   - tls-certificate.yaml
   - vault-namespace.yaml
   - vault-server.yaml
+  - vault-token-secret.yaml
   - vault-seed-jobs.yaml
+  - cluster-secret-store.yaml
   - keycloak-realm-import-job.yaml
 patches:
   - path: patches/db-cluster.yaml
   - path: patches/keycloak-db-cluster.yaml
-  - path: patches/vault-token-secret.yaml
   - path: patches/main-ingress.yaml
   - path: patches/auth-ingress.yaml
   - path: patches/keycloak.yaml
-  - path: patches/realm-url.yaml
