@@ -6,6 +6,7 @@ resources:
   - tls-certificate.yaml
   - network-policies.yaml
   - keycloak-config-cli-job.yaml
+  - pdb.yaml
 patches:
   - path: patches/db-cluster.yaml
   - path: patches/keycloak-db-cluster.yaml

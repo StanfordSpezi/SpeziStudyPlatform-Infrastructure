@@ -11,5 +11,6 @@ spec:
     forceSTSHeader: true
     customFrameOptionsValue: SAMEORIGIN
     contentTypeNosniff: true
-    browserXssFilter: true
     referrerPolicy: strict-origin-when-cross-origin
+    contentSecurityPolicy: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'self'"
+    permissionsPolicy: "camera=(), microphone=(), geolocation=()"

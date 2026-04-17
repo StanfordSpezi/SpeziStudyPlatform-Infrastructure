@@ -67,16 +67,21 @@ spec:
           ports:
             - name: http
               containerPort: 8080
-          readinessProbe:
+          startupProbe:
             httpGet:
               path: /auth/realms/master
               port: 8080
             initialDelaySeconds: 30
             periodSeconds: 10
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /auth/realms/master
+              port: 8080
+            periodSeconds: 10
           livenessProbe:
             tcpSocket:
               port: 8080
-            initialDelaySeconds: 60
             periodSeconds: 15
           resources:
             requests:

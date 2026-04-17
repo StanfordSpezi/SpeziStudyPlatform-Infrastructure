@@ -22,7 +22,7 @@ deployment:
   dnsPolicy: ClusterFirstWithHostNet
   initContainers:
     - name: volume-permissions
-      image: traefik:v2.10.4
+      image: busybox:1.37
       command: ["sh", "-c", "touch /data/acme.json; chown 65532:65532 /data/acme.json; chmod -v 600 /data/acme.json"]
       securityContext:
         runAsNonRoot: false

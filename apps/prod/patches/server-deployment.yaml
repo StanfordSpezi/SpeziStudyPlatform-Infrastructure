@@ -13,11 +13,13 @@ spec:
   template:
     spec:
       initContainers:
-        - name: migrate
+        - name: spezistudyplatform-server-migrate
           image: ghcr.io/stanfordspezi/spezistudyplatform-server:v0.1.0
+          imagePullPolicy: IfNotPresent
       containers:
-        - name: server
+        - name: spezistudyplatform-server-container
           image: ghcr.io/stanfordspezi/spezistudyplatform-server:v0.1.0
+          imagePullPolicy: IfNotPresent
           resources:
             requests:
               memory: 512Mi

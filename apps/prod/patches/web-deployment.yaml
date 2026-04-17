@@ -13,8 +13,9 @@ spec:
   template:
     spec:
       containers:
-        - name: web
+        - name: spezistudyplatform-web-container
           image: ghcr.io/stanfordspezi/spezistudyplatform-web:v0.1.0
+          imagePullPolicy: IfNotPresent
           resources:
             requests:
               memory: 128Mi

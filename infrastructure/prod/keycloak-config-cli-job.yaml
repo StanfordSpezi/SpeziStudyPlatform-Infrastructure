@@ -65,12 +65,12 @@ data:
       "enabled": true,
       "ssoSessionIdleTimeout": 86400,
       "ssoSessionMaxLifespan": 86400,
-      "accessTokenLifespan": 86400,
-      "accessTokenLifespanForImplicitFlow": 900,
+      "accessTokenLifespan": 300,
+      "accessTokenLifespanForImplicitFlow": 300,
       "registrationAllowed": true,
       "registrationEmailAsUsername": true,
       "rememberMe": true,
-      "verifyEmail": false,
+      "verifyEmail": true,
       "loginWithEmailAllowed": true,
       "duplicateEmailsAllowed": false,
       "resetPasswordAllowed": true,
@@ -182,8 +182,7 @@ data:
           "attributes": { "pkce.code.challenge.method": "S256" },
           "redirectUris": [
             "$(env:WEB_URL)/argo/auth/callback",
-            "$(env:WEB_URL)/argo/auth/login",
-            "http://localhost:8085/auth/callback"
+            "$(env:WEB_URL)/argo/auth/login"
           ],
           "defaultClientScopes": ["web-origins", "acr", "profile", "email", "groups"],
           "optionalClientScopes": ["address", "microprofile-jwt", "offline_access", "phone"]

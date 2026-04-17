@@ -168,3 +168,104 @@ spec:
       ports:
         - protocol: TCP
           port: 5432
+---
+# Egress rules (counterparts to ingress allows above)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-server-to-db-egress
+  namespace: spezistudyplatform
+spec:
+  podSelector:
+    matchLabels:
+      app: spezistudyplatform-server
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              cnpg.io/cluster: spezistudyplatform-db
+      ports:
+        - protocol: TCP
+          port: 5432
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-server-to-keycloak-egress
+  namespace: spezistudyplatform
+spec:
+  podSelector:
+    matchLabels:
+      app: spezistudyplatform-server
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: keycloak
+      ports:
+        - protocol: TCP
+          port: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-keycloak-to-db-egress
+  namespace: spezistudyplatform
+spec:
+  podSelector:
+    matchLabels:
+      app: keycloak
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              cnpg.io/cluster: keycloak-db
+      ports:
+        - protocol: TCP
+          port: 5432
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-cnpg-replication-egress
+  namespace: spezistudyplatform
+spec:
+  podSelector:
+    matchLabels:
+      cnpg.io/cluster: spezistudyplatform-db
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              cnpg.io/cluster: spezistudyplatform-db
+      ports:
+        - protocol: TCP
+          port: 5432
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-keycloak-cnpg-replication-egress
+  namespace: spezistudyplatform
+spec:
+  podSelector:
+    matchLabels:
+      cnpg.io/cluster: keycloak-db
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              cnpg.io/cluster: keycloak-db
+      ports:
+        - protocol: TCP
+          port: 5432

@@ -5,3 +5,5 @@ resources:
 patches:
   - path: patches/argocd-cm.yaml
   - path: patches/argocd-certificate.yaml
+  - path: patches/server-config-cm.yaml
+  - path: patches/ingress-route.yaml
