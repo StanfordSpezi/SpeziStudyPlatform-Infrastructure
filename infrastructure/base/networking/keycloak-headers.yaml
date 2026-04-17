@@ -8,3 +8,11 @@ spec:
     customRequestHeaders:
       X-Forwarded-Proto: https
       X-Forwarded-Port: "443"
+    contentSecurityPolicy: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-src 'self'; frame-ancestors 'self'; object-src 'none'"
+    stsSeconds: 31536000
+    stsIncludeSubdomains: true
+    stsPreload: true
+    forceSTSHeader: true
+    customFrameOptionsValue: SAMEORIGIN
+    contentTypeNosniff: true
+    referrerPolicy: strict-origin-when-cross-origin

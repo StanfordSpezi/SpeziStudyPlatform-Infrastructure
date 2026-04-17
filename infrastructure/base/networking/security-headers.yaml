@@ -12,5 +12,5 @@ spec:
     customFrameOptionsValue: SAMEORIGIN
     contentTypeNosniff: true
     referrerPolicy: strict-origin-when-cross-origin
-    contentSecurityPolicy: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'self'"
+    contentSecurityPolicy: "default-src 'self'; script-src 'self' 'sha256-0zZPgsifJ8h8aM+gmSxkrfNtAGUZb7ItVug6/j1UR5g='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-src 'self'; frame-ancestors 'self'"
     permissionsPolicy: "camera=(), microphone=(), geolocation=()"
