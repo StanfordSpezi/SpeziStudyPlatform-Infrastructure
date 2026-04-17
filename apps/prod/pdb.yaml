@@ -1,0 +1,21 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: spezistudyplatform-server-pdb
+  namespace: spezistudyplatform
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: spezistudyplatform-server
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: spezistudyplatform-web-pdb
+  namespace: spezistudyplatform
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: spezistudyplatform-web

@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spezistudyplatform-server
+  namespace: spezistudyplatform
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 0
+  template:
+    spec:
+      initContainers:
+        - name: spezistudyplatform-server-migrate
+          image: ghcr.io/stanfordspezi/spezistudyplatform-server:v0.1.0
+          imagePullPolicy: IfNotPresent
+      containers:
+        - name: spezistudyplatform-server-container
+          image: ghcr.io/stanfordspezi/spezistudyplatform-server:v0.1.0
+          imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: 250m
+            limits:
+              memory: 2Gi
+              cpu: "1"

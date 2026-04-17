@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spezistudyplatform-web
+  namespace: spezistudyplatform
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    spec:
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: spezistudyplatform-web-container
+          image: ghcr.io/stanfordspezi/spezistudyplatform-web:pr-123
+          resources:
+            requests:
+              memory: 64Mi
+              cpu: 25m
+            limits:
+              memory: 256Mi
+              cpu: 100m

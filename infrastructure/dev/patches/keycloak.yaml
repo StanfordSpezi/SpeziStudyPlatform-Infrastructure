@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+  namespace: spezistudyplatform
+spec:
+  replicas: 1
+  template:
+    spec:
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: keycloak
+          env:
+            - name: KC_HOSTNAME
+              value: localhost
+            - name: KC_HOSTNAME_STRICT
+              value: "false"

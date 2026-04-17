@@ -1,0 +1,274 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: keycloak-config-cli
+  namespace: spezistudyplatform
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app: keycloak-config-cli
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: keycloak-config-cli
+          image: quay.io/adorsys/keycloak-config-cli:6.5.0-26
+          env:
+            - name: KEYCLOAK_URL
+              value: http://keycloak.spezistudyplatform.svc.cluster.local/auth
+            - name: KEYCLOAK_USER
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-admin-secret
+                  key: username
+            - name: KEYCLOAK_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-admin-secret
+                  key: password
+            - name: KEYCLOAK_AVAILABILITYCHECK_ENABLED
+              value: "true"
+            - name: KEYCLOAK_AVAILABILITYCHECK_TIMEOUT
+              value: "120s"
+            - name: IMPORT_MANAGED_REALM
+              value: full
+            - name: IMPORT_FILES_LOCATIONS
+              value: /config/*
+            - name: IMPORT_VAR_SUBSTITUTION_ENABLED
+              value: "true"
+            - name: WEB_URL
+              value: https://platform.spezi.stanford.edu
+            - name: SERVER_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: spezistudyplatform-server-secret
+                  key: OAUTH_CLIENT_SECRET
+          volumeMounts:
+            - name: realm-config
+              mountPath: /config
+              readOnly: true
+      volumes:
+        - name: realm-config
+          configMap:
+            name: keycloak-realm-enforcement
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-realm-enforcement
+  namespace: spezistudyplatform
+data:
+  realm.json: |
+    {
+      "realm": "spezistudyplatform",
+      "enabled": true,
+      "ssoSessionIdleTimeout": 86400,
+      "ssoSessionMaxLifespan": 86400,
+      "accessTokenLifespan": 300,
+      "accessTokenLifespanForImplicitFlow": 300,
+      "registrationAllowed": true,
+      "registrationEmailAsUsername": true,
+      "rememberMe": true,
+      "verifyEmail": true,
+      "loginWithEmailAllowed": true,
+      "duplicateEmailsAllowed": false,
+      "resetPasswordAllowed": true,
+      "editUsernameAllowed": false,
+      "bruteForceProtected": true,
+      "groups": [
+        {
+          "name": "Stanford Biodesign Digital Health",
+          "subGroups": [
+            { "name": "admin", "subGroups": [] },
+            { "name": "researcher", "subGroups": [] }
+          ]
+        },
+        { "name": "ArgoCDAdmins", "subGroups": [] }
+      ],
+      "roles": {
+        "realm": [
+          {
+            "name": "default-roles-spezistudyplatform",
+            "description": "Composite role for default realm roles",
+            "composite": true,
+            "composites": { "realm": ["spezistudyplatform-participant"] },
+            "clientRole": false
+          },
+          { "name": "spezistudyplatform-authorized-users", "description": "Users authorized to access the Spezi Study Platform", "clientRole": false },
+          { "name": "ArgoCDAdmins", "description": "ArgoCD Administrators", "clientRole": false },
+          { "name": "spezistudyplatform-researcher", "description": "Researchers authorized to manage studies", "clientRole": false },
+          { "name": "spezistudyplatform-participant", "description": "Participants in Spezi studies via mobile app", "clientRole": false }
+        ]
+      },
+      "defaultRole": {
+        "name": "default-roles-spezistudyplatform",
+        "description": "Composite role for default realm roles",
+        "composite": true,
+        "composites": { "realm": ["spezistudyplatform-participant"] },
+        "clientRole": false
+      },
+      "clientScopes": [
+        {
+          "name": "groups",
+          "description": "Groups membership with full path",
+          "protocol": "openid-connect",
+          "attributes": {
+            "include.in.token.scope": "true",
+            "display.on.consent.screen": "true"
+          },
+          "protocolMappers": [
+            {
+              "name": "groups",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-group-membership-mapper",
+              "consentRequired": false,
+              "config": {
+                "full.path": "true",
+                "id.token.claim": "true",
+                "access.token.claim": "true",
+                "claim.name": "groups",
+                "userinfo.token.claim": "true"
+              }
+            },
+            {
+              "name": "realm roles",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-usermodel-realm-role-mapper",
+              "consentRequired": false,
+              "config": {
+                "multivalued": "true",
+                "id.token.claim": "true",
+                "access.token.claim": "true",
+                "claim.name": "roles",
+                "userinfo.token.claim": "true"
+              }
+            },
+            {
+              "name": "subject",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-sub-mapper",
+              "consentRequired": false,
+              "config": {
+                "id.token.claim": "true",
+                "access.token.claim": "true",
+                "userinfo.token.claim": "true"
+              }
+            },
+            {
+              "name": "email",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-usermodel-attribute-mapper",
+              "consentRequired": false,
+              "config": {
+                "user.attribute": "email",
+                "id.token.claim": "true",
+                "access.token.claim": "true",
+                "claim.name": "email",
+                "jsonType.label": "String",
+                "userinfo.token.claim": "true"
+              }
+            }
+          ]
+        }
+      ],
+      "clients": [
+        {
+          "clientId": "argocd",
+          "name": "ArgoCD",
+          "enabled": true,
+          "publicClient": true,
+          "standardFlowEnabled": true,
+          "directAccessGrantsEnabled": false,
+          "attributes": { "pkce.code.challenge.method": "S256" },
+          "redirectUris": [
+            "$(env:WEB_URL)/argo/auth/callback",
+            "$(env:WEB_URL)/argo/auth/login"
+          ],
+          "defaultClientScopes": ["web-origins", "acr", "profile", "email", "groups"],
+          "optionalClientScopes": ["address", "microprofile-jwt", "offline_access", "phone"]
+        },
+        {
+          "clientId": "spezistudyplatform-web",
+          "name": "Spezi Study Platform Web",
+          "enabled": true,
+          "publicClient": true,
+          "standardFlowEnabled": true,
+          "directAccessGrantsEnabled": false,
+          "attributes": { "pkce.code.challenge.method": "S256" },
+          "redirectUris": ["$(env:WEB_URL)/*"],
+          "webOrigins": ["$(env:WEB_URL)"],
+          "protocol": "openid-connect",
+          "defaultClientScopes": ["web-origins", "acr", "profile", "email", "groups"],
+          "optionalClientScopes": ["address", "microprofile-jwt", "offline_access", "phone"],
+          "protocolMappers": [
+            {
+              "name": "realm roles -> roles",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-usermodel-realm-role-mapper",
+              "config": {
+                "claim.name": "roles",
+                "multivalued": "true",
+                "jsonType.label": "String",
+                "id.token.claim": "true",
+                "access.token.claim": "true",
+                "userinfo.token.claim": "true"
+              }
+            }
+          ]
+        },
+        {
+          "clientId": "spezistudyplatform-server",
+          "name": "Spezi Study Platform Server",
+          "enabled": true,
+          "publicClient": false,
+          "clientAuthenticatorType": "client-secret",
+          "secret": "$(env:SERVER_CLIENT_SECRET)",
+          "serviceAccountsEnabled": true,
+          "standardFlowEnabled": false,
+          "directAccessGrantsEnabled": false,
+          "protocol": "openid-connect",
+          "defaultClientScopes": ["web-origins", "acr", "profile", "email", "groups"],
+          "optionalClientScopes": ["address", "microprofile-jwt", "offline_access", "phone"]
+        },
+        {
+          "clientId": "spezistudyplatform-app",
+          "name": "Spezi Study Mobile App",
+          "enabled": true,
+          "publicClient": true,
+          "redirectUris": ["spezi-study://callback"],
+          "webOrigins": [],
+          "protocol": "openid-connect",
+          "directAccessGrantsEnabled": false,
+          "serviceAccountsEnabled": false,
+          "standardFlowEnabled": true,
+          "defaultClientScopes": ["web-origins", "acr", "profile", "email", "groups"],
+          "optionalClientScopes": ["address", "microprofile-jwt", "offline_access", "phone"]
+        }
+      ],
+      "components": {
+        "org.keycloak.userprofile.UserProfileProvider": [
+          {
+            "providerId": "declarative-user-profile",
+            "config": {
+              "kc.user.profile.config": [
+                "{\"attributes\":[{\"name\":\"username\",\"displayName\":\"${username}\",\"validations\":{\"length\":{\"min\":3,\"max\":255},\"username-prohibited-characters\":{},\"up-username-not-idn-homograph\":{}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}},{\"name\":\"email\",\"displayName\":\"${email}\",\"validations\":{\"email\":{},\"length\":{\"max\":255}},\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]}}],\"unmanagedAttributePolicy\":\"ADMIN_VIEW\"}"
+              ]
+            }
+          }
+        ]
+      },
+      "users": [
+        {
+          "username": "service-account-spezistudyplatform-server",
+          "enabled": true,
+          "serviceAccountClientId": "spezistudyplatform-server",
+          "clientRoles": {
+            "realm-management": ["query-groups", "view-users"]
+          }
+        }
+      ]
+    }

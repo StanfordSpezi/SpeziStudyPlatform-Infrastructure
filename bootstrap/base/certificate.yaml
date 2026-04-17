@@ -1,0 +1,13 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: argocd-main-tls-cert
+  namespace: argocd
+spec:
+  commonName: DOMAIN_PLACEHOLDER
+  secretName: spezistudyplatform-main-tls-secret
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - DOMAIN_PLACEHOLDER

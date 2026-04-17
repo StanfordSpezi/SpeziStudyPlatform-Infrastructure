@@ -1,0 +1,10 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: keycloak-db
+  namespace: spezistudyplatform
+spec:
+  instances: 3
+  storage:
+    size: 50Gi
+  enableSuperuserAccess: false

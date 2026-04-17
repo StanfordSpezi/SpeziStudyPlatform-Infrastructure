@@ -1,23 +1,26 @@
-*secret.yaml
-.terraform
-.terraform-local
-.terraform.lock.hcl
-.tf
-*.tfstate
-*.tfstate.*
-*.tfstate.backup
-SpeziStudyPlatformDev.json
-gcp-service-account-key.json
+# Secrets (actual credential files, not Kubernetes Secret/ExternalSecret manifests)
+*.secret
+.env.local
 
+# Python
 __pycache__/
 *.py[cod]
 .venv/
-.env
 .python-version
-.ruff_cache/
-.pytest_cache/
 *.egg-info/
 .mypy_cache/
+.ruff_cache/
+.pytest_cache/
 .coverage
+
+# Local dev
 .kind-kubeconfig
-import.log
+.env
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+
+# macOS
+.DS_Store
