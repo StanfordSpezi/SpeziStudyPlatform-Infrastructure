@@ -21,8 +21,8 @@ spec:
             - -c
             - |
               until vault status >/dev/null 2>&1; do echo "Waiting for Vault..."; sleep 2; done
-              vault kv get secret/spezistudyplatform-server >/dev/null 2>&1 || \
-                vault kv put secret/spezistudyplatform-server OAUTH_CLIENT_SECRET=change-me-in-production
+              vault kv get secret/server-credentials >/dev/null 2>&1 || \
+                vault kv put secret/server-credentials KEYCLOAK_CLIENT_SECRET=change-me-in-production
 ---
 apiVersion: batch/v1
 kind: Job
@@ -47,8 +47,8 @@ spec:
             - -c
             - |
               until vault status >/dev/null 2>&1; do echo "Waiting for Vault..."; sleep 2; done
-              vault kv get secret/spezistudyplatform-postgres-credentials >/dev/null 2>&1 || \
-                vault kv put secret/spezistudyplatform-postgres-credentials username=spezistudyplatform password=spezistudyplatform1!2@
+              vault kv get secret/server-db-credentials >/dev/null 2>&1 || \
+                vault kv put secret/server-db-credentials username=spezistudyplatform password=spezistudyplatform1!2@
 ---
 apiVersion: batch/v1
 kind: Job
@@ -73,8 +73,8 @@ spec:
             - -c
             - |
               until vault status >/dev/null 2>&1; do echo "Waiting for Vault..."; sleep 2; done
-              vault kv get secret/keycloak-admin >/dev/null 2>&1 || \
-                vault kv put secret/keycloak-admin username=admin password=admin123!
+              vault kv get secret/keycloak-admin-credentials >/dev/null 2>&1 || \
+                vault kv put secret/keycloak-admin-credentials username=admin password=admin123!
 ---
 apiVersion: batch/v1
 kind: Job

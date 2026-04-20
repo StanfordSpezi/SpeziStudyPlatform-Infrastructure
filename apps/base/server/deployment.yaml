@@ -89,7 +89,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: spezistudyplatform-server-secret
-                  key: OAUTH_CLIENT_SECRET
+                  key: KEYCLOAK_CLIENT_SECRET
           startupProbe:
             httpGet:
               path: /api/v0/health
