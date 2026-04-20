@@ -4,4 +4,4 @@ metadata:
   name: spezistudyplatform-server-config
   namespace: spezistudyplatform
 data:
-  APP_ENVIRONMENT: production
+  APP_ENVIRONMENT: development
