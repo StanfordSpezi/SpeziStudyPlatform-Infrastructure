@@ -4,7 +4,7 @@ metadata:
   name: spezistudyplatform-db
   namespace: spezistudyplatform
 spec:
-  instances: 3
+  instances: 1
   storage:
     size: 50Gi
   enableSuperuserAccess: false
