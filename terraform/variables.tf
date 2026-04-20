@@ -16,6 +16,12 @@ variable "cluster_name" {
   default     = "spezistudyplatform-dev"
 }
 
+variable "zone" {
+  description = "GCP zone for the GKE cluster"
+  type        = string
+  default     = "us-west1-a"
+}
+
 variable "domain" {
   description = "Domain for the platform (used in output instructions)"
   type        = string

@@ -21,7 +21,7 @@ output "external_secrets_sa_email" {
 
 output "get_credentials_command" {
   description = "Run this to configure kubectl"
-  value       = "gcloud container clusters get-credentials ${google_container_cluster.primary.name} --region ${var.region} --project ${var.project_id}"
+  value       = "gcloud container clusters get-credentials ${google_container_cluster.primary.name} --zone ${var.zone} --project ${var.project_id}"
 }
 
 output "post_apply_instructions" {

@@ -3,7 +3,7 @@ resource "google_container_cluster" "primary" {
 
   name     = var.cluster_name
   project  = var.project_id
-  location = var.region
+  location = var.zone
 
   network    = google_compute_network.vpc.id
   subnetwork = google_compute_subnetwork.gke.id
@@ -49,11 +49,10 @@ resource "google_container_cluster" "primary" {
 resource "google_container_node_pool" "primary" {
   name     = "${var.cluster_name}-pool"
   project  = var.project_id
-  location = var.region
+  location = var.zone
   cluster  = google_container_cluster.primary.name
 
-  # Regional cluster: node_count is per zone (3 zones = 3 nodes total)
-  node_count = 1
+  node_count = 2
 
   node_config {
     machine_type = "e2-standard-4"
