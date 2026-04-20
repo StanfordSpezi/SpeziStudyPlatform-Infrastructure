@@ -14,11 +14,11 @@ spec:
     spec:
       initContainers:
         - name: spezistudyplatform-server-migrate
-          image: ghcr.io/stanfordspezi/spezistudyplatform-server:v0.1.0
+          image: ghcr.io/stanfordspezi/spezistudyplatform-server:main
           imagePullPolicy: IfNotPresent
       containers:
         - name: spezistudyplatform-server-container
-          image: ghcr.io/stanfordspezi/spezistudyplatform-server:v0.1.0
+          image: ghcr.io/stanfordspezi/spezistudyplatform-server:main
           imagePullPolicy: IfNotPresent
           resources:
             requests:

@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: spezistudyplatform-web-container
-          image: ghcr.io/stanfordspezi/spezistudyplatform-web:v0.1.0
+          image: ghcr.io/stanfordspezi/spezistudyplatform-web:main
           imagePullPolicy: IfNotPresent
           resources:
             requests:

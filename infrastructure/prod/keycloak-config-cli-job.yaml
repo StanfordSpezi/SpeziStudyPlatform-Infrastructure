@@ -46,7 +46,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: spezistudyplatform-server-secret
-                  key: OAUTH_CLIENT_SECRET
+                  key: KEYCLOAK_CLIENT_SECRET
           volumeMounts:
             - name: realm-config
               mountPath: /config

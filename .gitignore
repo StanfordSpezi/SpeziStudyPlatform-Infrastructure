@@ -22,5 +22,12 @@ __pycache__/
 .vscode/
 *.swp
 
+# Terraform
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/.terraform.lock.hcl
+terraform/terraform.tfvars
+
 # macOS
 .DS_Store

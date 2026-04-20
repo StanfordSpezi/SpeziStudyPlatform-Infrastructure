@@ -1,6 +1,8 @@
 service:
   enabled: true
   type: LoadBalancer
+  spec:
+    loadBalancerIP: "136.109.13.139"
 logs:
   general:
     level: WARN
@@ -14,24 +16,13 @@ persistence:
   name: traefik-data
   accessMode: ReadWriteOnce
   size: 1Gi
-  storageClass: standard-rw
+  storageClass: standard-rwo
   path: /data
   annotations: {}
 deployment:
   hostNetwork: false
-  initContainers:
-    - name: volume-permissions
-      image: busybox:1.37
-      command: ["sh", "-c", "touch /data/acme.json; chown 65532:65532 /data/acme.json; chmod -v 600 /data/acme.json"]
-      securityContext:
-        runAsNonRoot: false
-        runAsGroup: 0
-        runAsUser: 0
-      volumeMounts:
-        - name: traefik-data
-          mountPath: /data
-          readOnly: false
 podSecurityContext:
+  fsGroup: 65532
   fsGroupChangePolicy: OnRootMismatch
   runAsGroup: 65532
   runAsNonRoot: true
