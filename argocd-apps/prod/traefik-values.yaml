@@ -2,7 +2,7 @@ service:
   enabled: true
   type: LoadBalancer
   spec:
-    loadBalancerIP: "136.109.13.139"
+    loadBalancerIP: "34.182.76.103"
 logs:
   general:
     level: WARN
