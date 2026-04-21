@@ -2,8 +2,8 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - ../base
-  - cert-issuer.yaml
-  - tls-certificate.yaml
+  # - cert-issuer.yaml          # TODO: re-enable after DNS is configured
+  # - tls-certificate.yaml      # TODO: re-enable after DNS is configured
   # - network-policies.yaml  # TODO: re-enable with proper egress rules for K8s API
   - keycloak-config-cli-job.yaml
   - cluster-secret-store.yaml
