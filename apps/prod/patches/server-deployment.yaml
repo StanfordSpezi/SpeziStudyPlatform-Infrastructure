@@ -15,11 +15,11 @@ spec:
       initContainers:
         - name: spezistudyplatform-server-migrate
           image: ghcr.io/stanfordspezi/spezistudyplatform-server:main
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
       containers:
         - name: spezistudyplatform-server-container
           image: ghcr.io/stanfordspezi/spezistudyplatform-server:main
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           resources:
             requests:
               memory: 512Mi
