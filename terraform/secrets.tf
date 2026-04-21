@@ -1,16 +1,16 @@
 locals {
   secrets = {
     "server-db-credentials" = {
-      placeholder = jsonencode({ username = "CHANGE_ME", password = "CHANGE_ME" })
+      placeholder = jsonencode({ username = "spezistudyplatform", password = "spezistudyplatform" })
     }
     "keycloak-db-credentials" = {
-      placeholder = jsonencode({ username = "CHANGE_ME", password = "CHANGE_ME" })
+      placeholder = jsonencode({ username = "keycloak", password = "keycloak" })
     }
     "keycloak-admin-credentials" = {
-      placeholder = jsonencode({ username = "CHANGE_ME", password = "CHANGE_ME" })
+      placeholder = jsonencode({ username = "admin", password = "admin" })
     }
     "server-credentials" = {
-      placeholder = jsonencode({ KEYCLOAK_CLIENT_SECRET = "CHANGE_ME" })
+      placeholder = jsonencode({ KEYCLOAK_CLIENT_SECRET = "change-after-keycloak-setup" })
     }
   }
 }
