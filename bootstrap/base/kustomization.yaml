@@ -7,4 +7,3 @@ resources:
   - rbac-cm.yaml
   - server-config-cm.yaml
   - ingress-route.yaml
-  - certificate.yaml
