@@ -14,7 +14,7 @@ services:
   server-db:
     image: postgres:18-alpine
     volumes:
-      - server_db_data:/var/lib/postgresql/data
+      - server_db_data:/var/lib/postgresql
     environment:
       POSTGRES_USER: ${DATABASE_USERNAME}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
@@ -30,7 +30,7 @@ services:
   keycloak-db:
     image: postgres:18-alpine
     volumes:
-      - keycloak_db_data:/var/lib/postgresql/data
+      - keycloak_db_data:/var/lib/postgresql
     environment:
       POSTGRES_USER: ${KEYCLOAK_DB_USERNAME}
       POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
