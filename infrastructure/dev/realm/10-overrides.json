@@ -10,7 +10,8 @@
         { "name": "admin", "subGroups": [] },
         { "name": "researcher", "subGroups": [] }
       ]
-    }
+    },
+    { "name": "ArgoCDAdmins", "subGroups": [] }
   ],
   "clients": [
     {
