@@ -5,3 +5,11 @@ resources:
   - db-secret-es.yaml
   - keycloak.yaml
   - service-account.yaml
+  - keycloak-config-cli-job.yaml
+configMapGenerator:
+  - name: keycloak-realm-config
+    namespace: spezistudyplatform
+    files:
+      - 00-realm.json=realm/00-realm.json
+generatorOptions:
+  disableNameSuffixHash: true

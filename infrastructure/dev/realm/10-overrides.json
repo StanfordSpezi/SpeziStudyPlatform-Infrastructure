@@ -1,0 +1,53 @@
+{
+  "realm": "spezistudyplatform",
+  "accessTokenLifespan": 86400,
+  "accessTokenLifespanForImplicitFlow": 900,
+  "verifyEmail": false,
+  "groups": [
+    {
+      "name": "Stanford Biodesign Digital Health",
+      "subGroups": [
+        { "name": "admin", "subGroups": [] },
+        { "name": "researcher", "subGroups": [] }
+      ]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "argocd",
+      "redirectUris": [
+        "$(env:WEB_URL)/argo/auth/callback",
+        "$(env:WEB_URL)/argo/auth/login",
+        "http://localhost:8085/auth/callback"
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "leland@example.com",
+      "email": "leland@example.com",
+      "emailVerified": true,
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "password123", "temporary": false }],
+      "realmRoles": ["spezistudyplatform-authorized-users", "spezistudyplatform-researcher", "ArgoCDAdmins"],
+      "groups": ["/Stanford Biodesign Digital Health/admin", "/ArgoCDAdmins"]
+    },
+    {
+      "username": "jane@example.com",
+      "email": "jane@example.com",
+      "emailVerified": true,
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "password123", "temporary": false }],
+      "realmRoles": ["spezistudyplatform-authorized-users", "spezistudyplatform-researcher"],
+      "groups": ["/Stanford Biodesign Digital Health/researcher"]
+    },
+    {
+      "username": "alice@example.com",
+      "email": "alice@example.com",
+      "emailVerified": true,
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "password123", "temporary": false }],
+      "realmRoles": ["spezistudyplatform-participant"]
+    }
+  ]
+}
