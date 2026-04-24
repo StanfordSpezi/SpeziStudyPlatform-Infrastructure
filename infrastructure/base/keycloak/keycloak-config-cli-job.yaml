@@ -34,8 +34,6 @@ spec:
               value: "true"
             - name: KEYCLOAK_AVAILABILITYCHECK_TIMEOUT
               value: "120s"
-            - name: IMPORT_MANAGED_REALM
-              value: full
             - name: IMPORT_FILES_LOCATIONS
               value: /config/*
             - name: IMPORT_VAR_SUBSTITUTION_ENABLED

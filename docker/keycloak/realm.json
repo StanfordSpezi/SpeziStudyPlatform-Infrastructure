@@ -3,19 +3,25 @@
   "enabled": true,
   "ssoSessionIdleTimeout": 86400,
   "ssoSessionMaxLifespan": 86400,
-  "accessTokenLifespan": 300,
-  "accessTokenLifespanForImplicitFlow": 300,
+  "accessTokenLifespan": 86400,
+  "accessTokenLifespanForImplicitFlow": 900,
   "registrationAllowed": true,
   "registrationEmailAsUsername": true,
   "rememberMe": true,
-  "verifyEmail": true,
+  "verifyEmail": false,
   "loginWithEmailAllowed": true,
   "duplicateEmailsAllowed": false,
   "resetPasswordAllowed": true,
   "editUsernameAllowed": false,
   "bruteForceProtected": true,
   "groups": [
-    { "name": "ArgoCDAdmins", "subGroups": [] }
+    {
+      "name": "Stanford Biodesign Digital Health",
+      "subGroups": [
+        { "name": "admin", "subGroups": [] },
+        { "name": "researcher", "subGroups": [] }
+      ]
+    }
   ],
   "roles": {
     "realm": [
@@ -34,11 +40,6 @@
       {
         "name": "spezistudyplatform-participant",
         "description": "Participants in Spezi studies via mobile app",
-        "clientRole": false
-      },
-      {
-        "name": "ArgoCDAdmins",
-        "description": "ArgoCD Administrators",
         "clientRole": false
       }
     ]
@@ -123,10 +124,7 @@
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": false,
       "attributes": { "pkce.code.challenge.method": "S256" },
-      "redirectUris": [
-        "$(env:WEB_URL)/argo/auth/callback",
-        "$(env:WEB_URL)/argo/auth/login"
-      ],
+      "redirectUris": ["*"],
       "defaultClientScopes": ["web-origins", "acr", "profile", "email", "groups"],
       "optionalClientScopes": ["address", "microprofile-jwt", "offline_access", "phone"]
     },
@@ -138,8 +136,8 @@
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": false,
       "attributes": { "pkce.code.challenge.method": "S256" },
-      "redirectUris": ["$(env:WEB_URL)/*"],
-      "webOrigins": ["$(env:WEB_URL)"],
+      "redirectUris": ["*"],
+      "webOrigins": ["*"],
       "protocol": "openid-connect",
       "defaultClientScopes": ["web-origins", "acr", "profile", "email", "groups"],
       "optionalClientScopes": ["address", "microprofile-jwt", "offline_access", "phone"],
@@ -208,6 +206,32 @@
       "clientRoles": {
         "realm-management": ["query-groups", "view-users"]
       }
+    },
+    {
+      "username": "leland@example.com",
+      "email": "leland@example.com",
+      "emailVerified": true,
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "password123", "temporary": false }],
+      "realmRoles": ["spezistudyplatform-researcher"],
+      "groups": ["/Stanford Biodesign Digital Health/admin"]
+    },
+    {
+      "username": "jane@example.com",
+      "email": "jane@example.com",
+      "emailVerified": true,
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "password123", "temporary": false }],
+      "realmRoles": ["spezistudyplatform-researcher"],
+      "groups": ["/Stanford Biodesign Digital Health/researcher"]
+    },
+    {
+      "username": "alice@example.com",
+      "email": "alice@example.com",
+      "emailVerified": true,
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "password123", "temporary": false }],
+      "realmRoles": ["spezistudyplatform-participant"]
     }
   ]
 }

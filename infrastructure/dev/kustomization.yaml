@@ -19,8 +19,8 @@ patches:
 configMapGenerator:
   - name: keycloak-realm-config
     namespace: spezistudyplatform
-    behavior: merge
+    behavior: replace
     files:
-      - 10-overrides.json=realm/10-overrides.json
+      - 00-realm.json=realm/00-realm.json
 generatorOptions:
   disableNameSuffixHash: true

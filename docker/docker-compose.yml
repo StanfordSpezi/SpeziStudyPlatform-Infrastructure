@@ -76,14 +76,12 @@ services:
       KEYCLOAK_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
       KEYCLOAK_AVAILABILITYCHECK_ENABLED: "true"
       KEYCLOAK_AVAILABILITYCHECK_TIMEOUT: "120s"
-      IMPORT_MANAGED_REALM: full
       IMPORT_FILES_LOCATIONS: /config/*
       IMPORT_VAR_SUBSTITUTION_ENABLED: "true"
       WEB_URL: "http://localhost:3000"
       SERVER_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
     volumes:
-      - ../infrastructure/base/keycloak/realm/00-realm.json:/config/00-realm.json:ro
-      - ./keycloak/docker-overrides.json:/config/10-overrides.json:ro
+      - ./keycloak/realm.json:/config/realm.json:ro
     depends_on:
       keycloak:
         condition: service_healthy
