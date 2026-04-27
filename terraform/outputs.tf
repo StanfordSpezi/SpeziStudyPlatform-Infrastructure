@@ -1,6 +1,16 @@
+output "project_id" {
+  description = "GCP project ID"
+  value       = var.project_id
+}
+
 output "cluster_name" {
   description = "GKE cluster name (use to replace CLUSTER_NAME_TODO in cluster-secret-store.yaml)"
   value       = google_container_cluster.primary.name
+}
+
+output "cluster_zone" {
+  description = "GKE cluster zone"
+  value       = var.zone
 }
 
 output "cluster_endpoint" {
@@ -33,22 +43,13 @@ output "post_apply_instructions" {
     1. Get kubeconfig:
        $(tofu output -raw get_credentials_command)
 
-    2. Replace CLUSTER_NAME_TODO in infrastructure/prod/cluster-secret-store.yaml:
-       Cluster name: ${google_container_cluster.primary.name}
+    2. Verify loadBalancerIP in argocd-apps/prod/traefik-values.yaml matches: ${google_compute_address.traefik.address}
+       (commit and push before bootstrapping)
 
-    3. Add loadBalancerIP to argocd-apps/prod/traefik-values.yaml:
-       loadBalancerIP: "${google_compute_address.traefik.address}"
+    3. Add /etc/hosts entry:
+       ${google_compute_address.traefik.address} ${var.domain}
 
-    4. Populate secrets in GCP Secret Manager:
-       - server-db-credentials
-       - keycloak-db-credentials
-       - keycloak-admin-credentials
-       - server-credentials
-
-    5. Request DNS A record from Stanford IT:
-       ${var.domain} -> ${google_compute_address.traefik.address}
-
-    6. Commit manifest changes, push, then bootstrap:
-       python3 tools/setup.py --env prod
+    4. Bootstrap ArgoCD:
+       make prod-bootstrap
   EOT
 }

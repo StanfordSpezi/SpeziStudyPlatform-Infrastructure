@@ -60,6 +60,10 @@ The script will test:
 
 You can customize the test credentials using command-line arguments (e.g., `--username`, `--password`).
 
+## Docker Local Development
+
+For running backing services (PostgreSQL, Keycloak) or the full stack without Kubernetes, see the [Docker setup guide](docker/README.md). This is the recommended approach when developing the [Server](https://github.com/StanfordSpezi/SpeziStudyPlatform-Server) or [Web](https://github.com/StanfordSpezi/SpeziStudyPlatform-Web) repositories locally.
+
 ## Optional Tools
 
 - **k9s**: A terminal-based UI to manage your Kubernetes cluster. (`brew install k9s`)
