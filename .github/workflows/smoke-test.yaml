@@ -54,3 +54,9 @@ jobs:
           echo ""
           echo "=== Events ==="
           kubectl get events -A --sort-by='.lastTimestamp' | tail -40
+          echo ""
+          echo "=== Keycloak Logs ==="
+          kubectl logs -n spezistudyplatform -l app=keycloak --tail=80 || true
+          echo ""
+          echo "=== Server Init Container Logs ==="
+          kubectl logs -n spezistudyplatform -l app=spezistudyplatform-server -c spezistudyplatform-server-migrate --tail=40 || true
