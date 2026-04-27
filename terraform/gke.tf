@@ -1,3 +1,11 @@
+#
+# This source file is part of the Stanford Spezi open source project
+#
+# SPDX-FileCopyrightText: 2026 Stanford University and the project authors (see CONTRIBUTORS.md)
+#
+# SPDX-License-Identifier: MIT
+#
+
 resource "google_container_cluster" "primary" {
   provider = google-beta
 
@@ -41,7 +49,7 @@ resource "google_container_cluster" "primary" {
     }
   }
 
-  deletion_protection = false  # Set to true after cluster is stable
+  deletion_protection = false # Set to true after cluster is stable
 
   depends_on = [google_project_service.apis]
 }

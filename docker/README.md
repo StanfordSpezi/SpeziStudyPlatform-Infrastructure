@@ -1,3 +1,11 @@
+<!--
+This source file is part of the Stanford Spezi open source project
+
+SPDX-FileCopyrightText: 2026 Stanford University and the project authors (see CONTRIBUTORS.md)
+
+SPDX-License-Identifier: MIT
+-->
+
 # Docker Local Development
 
 Local development environment for the Spezi Study Platform. Provides backing services (PostgreSQL, Keycloak) and optionally runs the full stack using published container images.

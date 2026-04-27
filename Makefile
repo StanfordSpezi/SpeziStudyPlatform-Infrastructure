@@ -1,3 +1,11 @@
+#
+# This source file is part of the Stanford Spezi open source project
+#
+# SPDX-FileCopyrightText: 2026 Stanford University and the project authors (see CONTRIBUTORS.md)
+#
+# SPDX-License-Identifier: MIT
+#
+
 .PHONY: help dev dev-down dev-status \
        prod-plan prod-apply prod-down prod-destroy prod-bootstrap prod-status \
        prod-scale-down prod-scale-up \

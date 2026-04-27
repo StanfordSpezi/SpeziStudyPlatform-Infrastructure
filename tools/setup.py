@@ -1,3 +1,11 @@
+#
+# This source file is part of the Stanford Spezi open source project
+#
+# SPDX-FileCopyrightText: 2026 Stanford University and the project authors (see CONTRIBUTORS.md)
+#
+# SPDX-License-Identifier: MIT
+#
+
 #!/usr/bin/env python3
 """Bootstrap script for Spezi Study Platform.
 
@@ -42,7 +50,8 @@ def get_current_branch() -> str:
         ["git", "rev-parse", "--abbrev-ref", "HEAD"],
         capture_output=True, text=True, check=True, cwd=ROOT,
     )
-    return result.stdout.strip()
+    branch = result.stdout.strip()
+    return branch if branch != "HEAD" else "main"
 
 
 def branch_exists_on_remote(branch: str) -> bool:
