@@ -1,65 +1,78 @@
+<!--
+
+This source file is part of the Stanford Spezi open source project
+
+SPDX-FileCopyrightText: 2026 Stanford University and the project authors (see CONTRIBUTORS.md)
+
+SPDX-License-Identifier: MIT
+
+-->
+
 # Spezi Study Platform Infrastructure
 
-This repository contains the infrastructure definitions for the Spezi Study Platform, managed with a GitOps approach using ArgoCD, Helm, and Kustomize.
-
-The repo has been tested to work on unix-based distros, specifically WSL2 and macOS. For anything else, YMMV.
+GitOps infrastructure for the Spezi Study Platform, managing deployment of the [Server](https://github.com/StanfordSpezi/SpeziStudyPlatform-Server) and [Web](https://github.com/StanfordSpezi/SpeziStudyPlatform-Web) applications alongside supporting services (Keycloak, PostgreSQL, Traefik) across local and production environments. Built with ArgoCD, Kustomize, Helm, and OpenTofu.
 
 ## Prerequisites
-(Note that we assume [Homebrew](https://brew.sh/) is installed prior to installing the rest of these, but you are welcome to install them however you wish)
 
-Before you begin, ensure you have the following tools installed:
+Install via [Homebrew](https://brew.sh/) or your preferred package manager:
 
-- **kind**: For running local Kubernetes clusters. (`brew install kind`)
-- **kubectl**: For interacting with Kubernetes clusters. (`brew install kubernetes-cli`)
-- **helm**: For managing Kubernetes charts. (`brew install helm`)
-- **python3**: For running the setup script.
+| Tool                                               | Install                       | Purpose                    |
+| -------------------------------------------------- | ----------------------------- | -------------------------- |
+| [kind](https://kind.sigs.k8s.io/)                  | `brew install kind`           | Local Kubernetes clusters  |
+| [kubectl](https://kubernetes.io/docs/tasks/tools/) | `brew install kubernetes-cli` | Kubernetes CLI             |
+| [helm](https://helm.sh/)                           | `brew install helm`           | Kubernetes package manager |
+| [python3](https://www.python.org/)                 | `brew install python`         | Setup and test scripts     |
+| [kubeconform](https://github.com/yannh/kubeconform) | `brew install kubeconform`    | Schema validation          |
 
-## Local Development
+## Quick Start
 
 ```bash
-# One-time: create the KIND cluster
-kind create cluster --config tools/kind-config.yaml
+make dev            # Create KIND cluster, bootstrap ArgoCD + all services
+make dev-status     # Check sync progress
+make argocd-password # Get ArgoCD admin password
+```
 
-# Push your branch (ArgoCD syncs from GitHub)
+To bootstrap from a feature branch:
+
+```bash
 git push -u origin HEAD
-
-# Bootstrap ArgoCD, which then manages everything
-make dev
-# or: python3 tools/setup.py
-# or: python3 tools/setup.py --branch my-feature
-
-# Monitor sync progress
-make dev-status
+make dev BRANCH=my-feature
 ```
 
-The setup script installs ArgoCD via Helm, then applies a root Application that triggers the app-of-apps pattern. ArgoCD syncs operators, infrastructure, and application workloads via sync waves.
-
-### Forcing a Clean Setup
+To start fresh:
 
 ```bash
-# Delete and recreate the cluster
-make dev-recreate
+make dev-down && make dev
 ```
 
-## Integration Tests
+Run `make help` to list all available targets, including production commands for OpenTofu and GKE.
 
-After setting up the local environment, you can run the end-to-end integration tests to verify the authentication and routing functionality.
+### Dev Test Users
 
-The test script is automatically configured by the local setup process. To run the tests:
+All dev users share the password `password123`:
 
-```bash
-python3 tools/run_integration_tests.py --insecure
-```
+| Username             | Role                     |
+| -------------------- | ------------------------ |
+| `leland@example.com` | Researcher, ArgoCD Admin |
+| `jane@example.com`   | Researcher               |
+| `alice@example.com`  | Participant              |
 
-The `--insecure` flag is required to handle the self-signed certificates used in the local dev environment.
+## Docker Development
 
-The script will test:
--   Login with an authorized user (`testuser`/`password123`).
--   Denial of an unauthorized user (`testuser2`/`password456`).
--   Rejection of invalid credentials.
+For running backing services (PostgreSQL, Keycloak) without Kubernetes, see the [Docker setup guide](docker/README.md). This is the recommended approach when developing the [Server](https://github.com/StanfordSpezi/SpeziStudyPlatform-Server) or [Web](https://github.com/StanfordSpezi/SpeziStudyPlatform-Web) repositories locally.
 
-You can customize the test credentials using command-line arguments (e.g., `--username`, `--password`).
+## Contributing
 
-## Optional Tools
+We welcome contributions! Please read our [contributing guidelines](https://github.com/StanfordSpezi/.github/blob/main/CONTRIBUTING.md) for more information on how to get started.
 
-- **k9s**: A terminal-based UI to manage your Kubernetes cluster. (`brew install k9s`)
+## License
+
+This project is licensed under the MIT License. See [Licenses](https://github.com/StanfordSpezi/SpeziStudyPlatform-Infrastructure/tree/main/LICENSES) for more information.
+
+## Contributors
+
+This project is developed as part of the Stanford Byers Center for Biodesign at Stanford University.
+See [CONTRIBUTORS.md](https://github.com/StanfordSpezi/SpeziStudyPlatform-Infrastructure/tree/main/CONTRIBUTORS.md) for a full list of all contributors.
+
+![Stanford Byers Center for Biodesign Logo](https://raw.githubusercontent.com/StanfordBDHG/.github/main/assets/biodesign-footer-light.png#gh-light-mode-only)
+![Stanford Byers Center for Biodesign Logo](https://raw.githubusercontent.com/StanfordBDHG/.github/main/assets/biodesign-footer-dark.png#gh-dark-mode-only)
