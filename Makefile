@@ -1,7 +1,7 @@
 .PHONY: help dev dev-down dev-status \
        prod-plan prod-apply prod-down prod-destroy prod-bootstrap prod-status \
        prod-scale-down prod-scale-up \
-       argocd-password validate lint build-all
+       argocd-password validate lint test
 
 TOFU := tofu -chdir=terraform
 KIND_CLUSTER := spezi-study-platform
@@ -74,37 +74,28 @@ argocd-password: ## Print ArgoCD admin password
 	@kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d; echo
 
 # ---------------------------------------------------------------------------
-# Validation
+# Validation & Testing
 # ---------------------------------------------------------------------------
 
+OVERLAYS := infrastructure/dev infrastructure/prod apps/dev apps/prod \
+            bootstrap/dev bootstrap/prod argocd-apps/dev argocd-apps/prod
+
 validate: ## Validate all Kustomize overlays build cleanly
-	@echo "Building infrastructure/dev..."
-	@kubectl kustomize infrastructure/dev > /dev/null
-	@echo "Building infrastructure/prod..."
-	@kubectl kustomize infrastructure/prod > /dev/null
-	@echo "Building apps/dev..."
-	@kubectl kustomize apps/dev > /dev/null
-	@echo "Building apps/prod..."
-	@kubectl kustomize apps/prod > /dev/null
-	@echo "Building bootstrap/dev..."
-	@kubectl kustomize bootstrap/dev > /dev/null
-	@echo "Building bootstrap/prod..."
-	@kubectl kustomize bootstrap/prod > /dev/null
-	@echo "Building argocd-apps/dev..."
-	@kubectl kustomize argocd-apps/dev > /dev/null
-	@echo "Building argocd-apps/prod..."
-	@kubectl kustomize argocd-apps/prod > /dev/null
+	@for overlay in $(OVERLAYS); do \
+		echo "Building $$overlay..."; \
+		kubectl kustomize $$overlay > /dev/null; \
+	done
 	@echo "All overlays build successfully."
 
-lint: ## Run kubeconform schema validation on all overlays
-	@for overlay in infrastructure/dev infrastructure/prod apps/dev apps/prod bootstrap/dev bootstrap/prod argocd-apps/dev argocd-apps/prod; do \
+lint: ## Run kubeconform schema validation (with CRD schemas) on all overlays
+	@for overlay in $(OVERLAYS); do \
 		echo "Validating $$overlay..."; \
-		kubectl kustomize $$overlay | kubeconform -strict -summary -output text; \
+		kubectl kustomize $$overlay | kubeconform \
+			-strict -summary -output text \
+			-schema-location default \
+			-schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceVersion}}.json' \
+			-skip CustomResourceDefinition; \
 	done
 
-build-all: ## Render all overlays to stdout (useful for diffing)
-	@for overlay in infrastructure/dev infrastructure/prod apps/dev apps/prod bootstrap/dev bootstrap/prod argocd-apps/dev argocd-apps/prod; do \
-		echo "---"; \
-		echo "# $$overlay"; \
-		kubectl kustomize $$overlay; \
-	done
+test: ## Run smoke test (requires running cluster from 'make dev')
+	bash tools/smoke-test.sh
