@@ -93,7 +93,7 @@ lint: ## Run kubeconform schema validation (with CRD schemas) on all overlays
 		kubectl kustomize $$overlay | kubeconform \
 			-strict -summary -output text \
 			-schema-location default \
-			-schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceVersion}}.json' \
+			-schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
 			-skip CustomResourceDefinition; \
 	done
 

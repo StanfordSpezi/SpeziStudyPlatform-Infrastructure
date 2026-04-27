@@ -22,6 +22,7 @@ Install via [Homebrew](https://brew.sh/) or your preferred package manager:
 | [kubectl](https://kubernetes.io/docs/tasks/tools/) | `brew install kubernetes-cli` | Kubernetes CLI             |
 | [helm](https://helm.sh/)                           | `brew install helm`           | Kubernetes package manager |
 | [python3](https://www.python.org/)                 | `brew install python`         | Setup and test scripts     |
+| [kubeconform](https://github.com/yannh/kubeconform) | `brew install kubeconform`    | Schema validation          |
 
 ## Quick Start
 
