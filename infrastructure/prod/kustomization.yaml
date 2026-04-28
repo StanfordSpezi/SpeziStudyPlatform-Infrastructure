@@ -12,7 +12,6 @@ resources:
   - ../base
   # - cert-issuer.yaml          # TODO: re-enable after DNS is configured
   # - tls-certificate.yaml      # TODO: re-enable after DNS is configured
-  - network-policies.yaml
   - cluster-secret-store.yaml
   - external-secrets-sa.yaml
 patches:

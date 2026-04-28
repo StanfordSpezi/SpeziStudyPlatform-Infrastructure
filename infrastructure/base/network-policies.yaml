@@ -19,6 +19,16 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
+  name: default-deny-egress
+  namespace: spezistudyplatform
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
   name: allow-dns-egress
   namespace: spezistudyplatform
 spec:
@@ -35,6 +45,24 @@ spec:
           port: 53
         - protocol: TCP
           port: 53
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-external-to-traefik
+  namespace: spezistudyplatform
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: traefik
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - protocol: TCP
+          port: 8000
+        - protocol: TCP
+          port: 8443
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -56,6 +84,9 @@ spec:
         - podSelector:
             matchLabels:
               app.kubernetes.io/name: traefik
+      ports:
+        - protocol: TCP
+          port: 8080
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -120,26 +151,6 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: allow-keycloak-cnpg-replication
-  namespace: spezistudyplatform
-spec:
-  podSelector:
-    matchLabels:
-      cnpg.io/cluster: keycloak-db
-  policyTypes:
-    - Ingress
-  ingress:
-    - from:
-        - podSelector:
-            matchLabels:
-              cnpg.io/cluster: keycloak-db
-      ports:
-        - protocol: TCP
-          port: 5432
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
   name: allow-server-to-keycloak
   namespace: spezistudyplatform
 spec:
@@ -157,27 +168,13 @@ spec:
         - protocol: TCP
           port: 8080
 ---
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: allow-cnpg-replication
-  namespace: spezistudyplatform
-spec:
-  podSelector:
-    matchLabels:
-      cnpg.io/cluster: spezistudyplatform-db
-  policyTypes:
-    - Ingress
-  ingress:
-    - from:
-        - podSelector:
-            matchLabels:
-              cnpg.io/cluster: spezistudyplatform-db
-      ports:
-        - protocol: TCP
-          port: 5432
----
-# CNPG instance manager pods need the K8s API for leader election and status updates
+# CNPG instance manager pods need the K8s API for leader election and status updates.
+# CIDRs are GKE-specific and sourced from terraform:
+#   - 10.8.0.1/32: kubernetes.default service IP (first usable in services range
+#     terraform/networking.tf -> ip_cidr_range = "10.8.0.0/20")
+#   - 172.16.0.0/28: GKE control plane endpoint
+#     (terraform/gke.tf -> master_ipv4_cidr_block = "172.16.0.0/28")
+# Update both blocks if the terraform values change.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -193,10 +190,36 @@ spec:
   egress:
     - to:
         - ipBlock:
+            cidr: 10.8.0.1/32
+        - ipBlock:
             cidr: 172.16.0.0/28
       ports:
         - protocol: TCP
           port: 443
+---
+# CNPG operator (cnpg-system ns) reaches instance pods for status (8000) and metrics (9187)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-cnpg-operator-to-instances
+  namespace: spezistudyplatform
+spec:
+  podSelector:
+    matchExpressions:
+      - key: cnpg.io/cluster
+        operator: Exists
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: cnpg-system
+      ports:
+        - protocol: TCP
+          port: 8000
+        - protocol: TCP
+          port: 9187
 ---
 # Egress rules (counterparts to ingress allows above)
 apiVersion: networking.k8s.io/v1
@@ -262,46 +285,6 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: allow-cnpg-replication-egress
-  namespace: spezistudyplatform
-spec:
-  podSelector:
-    matchLabels:
-      cnpg.io/cluster: spezistudyplatform-db
-  policyTypes:
-    - Egress
-  egress:
-    - to:
-        - podSelector:
-            matchLabels:
-              cnpg.io/cluster: spezistudyplatform-db
-      ports:
-        - protocol: TCP
-          port: 5432
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: allow-keycloak-cnpg-replication-egress
-  namespace: spezistudyplatform
-spec:
-  podSelector:
-    matchLabels:
-      cnpg.io/cluster: keycloak-db
-  policyTypes:
-    - Egress
-  egress:
-    - to:
-        - podSelector:
-            matchLabels:
-              cnpg.io/cluster: keycloak-db
-      ports:
-        - protocol: TCP
-          port: 5432
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
   name: allow-config-cli-to-keycloak
   namespace: spezistudyplatform
 spec:
@@ -318,6 +301,50 @@ spec:
       ports:
         - protocol: TCP
           port: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-traefik-egress
+  namespace: spezistudyplatform
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: traefik
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchExpressions:
+              - key: app
+                operator: In
+                values:
+                  - spezistudyplatform-server
+                  - spezistudyplatform-web
+                  - keycloak
+      ports:
+        - protocol: TCP
+          port: 8080
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: argocd
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: argocd-server
+      ports:
+        - protocol: TCP
+          port: 8080
+    # K8s API egress (Traefik watches IngressRoute CRDs). CIDRs documented on allow-cnpg-to-k8s-api above.
+    - to:
+        - ipBlock:
+            cidr: 10.8.0.1/32
+        - ipBlock:
+            cidr: 172.16.0.0/28
+      ports:
+        - protocol: TCP
+          port: 443
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
