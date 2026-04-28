@@ -1,3 +1,11 @@
+#
+# This source file is part of the Stanford Spezi open source project
+#
+# SPDX-FileCopyrightText: 2026 Stanford University and the project authors (see CONTRIBUTORS.md)
+#
+# SPDX-License-Identifier: MIT
+#
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -15,7 +23,7 @@ spec:
           effect: NoSchedule
       containers:
         - name: spezistudyplatform-web-container
-          image: ghcr.io/stanfordspezi/spezistudyplatform-web:pr-123
+          image: ghcr.io/stanfordspezi/spezistudyplatform-web:main
           resources:
             requests:
               memory: 64Mi

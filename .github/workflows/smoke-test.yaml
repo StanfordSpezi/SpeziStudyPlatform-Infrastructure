@@ -1,0 +1,64 @@
+#
+# This source file is part of the Stanford Spezi open source project
+#
+# SPDX-FileCopyrightText: 2026 Stanford University and the project authors (see CONTRIBUTORS.md)
+#
+# SPDX-License-Identifier: MIT
+#
+
+name: Smoke Test
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  kind-smoke-test:
+    name: KIND Smoke Test
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install KIND
+        run: |
+          curl -sSLo ./kind https://kind.sigs.k8s.io/dl/latest/kind-linux-amd64
+          chmod +x ./kind
+          sudo mv ./kind /usr/local/bin/kind
+
+      - name: Install Helm
+        uses: azure/setup-helm@v5
+
+      - name: Create KIND cluster
+        run: kind create cluster --name spezi-study-platform --config tools/kind-config.yaml
+
+      - name: Bootstrap ArgoCD and applications
+        run: python3 tools/setup.py
+
+      - name: Wait for ArgoCD Applications
+        run: bash tools/smoke-test.sh
+        env:
+          SMOKE_TEST_TIMEOUT: "600"
+
+      - name: Debug on failure
+        if: failure()
+        run: |
+          echo "=== ArgoCD Applications ==="
+          kubectl get applications -n argocd -o wide
+          echo ""
+          echo "=== All Pods ==="
+          kubectl get pods -A
+          echo ""
+          echo "=== Events ==="
+          kubectl get events -A --sort-by='.lastTimestamp' | tail -40
+          echo ""
+          echo "=== Crashing Pod Logs ==="
+          for pod in $(kubectl get pods -n spezistudyplatform --no-headers | grep -E 'CrashLoop|Error' | awk '{print $1}'); do
+            for flag in "" "--previous"; do
+              echo "--- $pod $flag ---"
+              kubectl logs -n spezistudyplatform "$pod" --all-containers $flag --tail=40 2>&1 || true
+            done
+          done

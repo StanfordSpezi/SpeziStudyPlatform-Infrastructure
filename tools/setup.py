@@ -1,3 +1,11 @@
+#
+# This source file is part of the Stanford Spezi open source project
+#
+# SPDX-FileCopyrightText: 2026 Stanford University and the project authors (see CONTRIBUTORS.md)
+#
+# SPDX-License-Identifier: MIT
+#
+
 #!/usr/bin/env python3
 """Bootstrap script for Spezi Study Platform.
 
@@ -11,6 +19,7 @@ Usage:
 """
 
 import argparse
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -38,6 +47,10 @@ def helm(*args: str, **kwargs) -> subprocess.CompletedProcess:
 
 
 def get_current_branch() -> str:
+    for var in ("GITHUB_HEAD_REF", "GITHUB_REF_NAME"):
+        val = os.environ.get(var, "").strip()
+        if val:
+            return val
     result = subprocess.run(
         ["git", "rev-parse", "--abbrev-ref", "HEAD"],
         capture_output=True, text=True, check=True, cwd=ROOT,

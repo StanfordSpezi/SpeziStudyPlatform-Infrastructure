@@ -1,6 +1,24 @@
+#
+# This source file is part of the Stanford Spezi open source project
+#
+# SPDX-FileCopyrightText: 2026 Stanford University and the project authors (see CONTRIBUTORS.md)
+#
+# SPDX-License-Identifier: MIT
+#
+
+output "project_id" {
+  description = "GCP project ID"
+  value       = var.project_id
+}
+
 output "cluster_name" {
   description = "GKE cluster name (use to replace CLUSTER_NAME_TODO in cluster-secret-store.yaml)"
   value       = google_container_cluster.primary.name
+}
+
+output "cluster_zone" {
+  description = "GKE cluster zone"
+  value       = var.zone
 }
 
 output "cluster_endpoint" {
@@ -33,22 +51,17 @@ output "post_apply_instructions" {
     1. Get kubeconfig:
        $(tofu output -raw get_credentials_command)
 
-    2. Replace CLUSTER_NAME_TODO in infrastructure/prod/cluster-secret-store.yaml:
-       Cluster name: ${google_container_cluster.primary.name}
+    2. Verify loadBalancerIP in argocd-apps/prod/traefik-values.yaml matches: ${google_compute_address.traefik.address}
+       (commit and push before bootstrapping)
 
-    3. Add loadBalancerIP to argocd-apps/prod/traefik-values.yaml:
-       loadBalancerIP: "${google_compute_address.traefik.address}"
+    3. Configure DNS:
+       Create an A record pointing ${var.domain} to ${google_compute_address.traefik.address}
+       (For testing before DNS propagates, add to /etc/hosts: ${google_compute_address.traefik.address} ${var.domain})
 
-    4. Populate secrets in GCP Secret Manager:
-       - server-db-credentials
-       - keycloak-db-credentials
-       - keycloak-admin-credentials
-       - server-credentials
+    4. Enable TLS (after DNS is live):
+       Re-enable tls-certificate.yaml and certificate patches in infrastructure/prod and bootstrap/prod kustomization.yaml
 
-    5. Request DNS A record from Stanford IT:
-       ${var.domain} -> ${google_compute_address.traefik.address}
-
-    6. Commit manifest changes, push, then bootstrap:
-       python3 tools/setup.py --env prod
+    5. Bootstrap ArgoCD:
+       make prod-bootstrap
   EOT
 }

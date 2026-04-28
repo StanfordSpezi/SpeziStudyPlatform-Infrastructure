@@ -1,4 +1,12 @@
-name: Validate Manifests
+#
+# This source file is part of the Stanford Spezi open source project
+#
+# SPDX-FileCopyrightText: 2026 Stanford University and the project authors (see CONTRIBUTORS.md)
+#
+# SPDX-License-Identifier: MIT
+#
+
+name: Validate
 
 on:
   pull_request:
@@ -7,49 +15,42 @@ on:
     branches: [main]
 
 jobs:
-  kustomize-build:
-    name: Kustomize Build
+  manifests:
+    name: Validate Manifests
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        overlay:
-          - infrastructure/dev
-          - infrastructure/prod
-          - apps/dev
-          - apps/prod
-          - bootstrap/dev
-          - bootstrap/prod
-          - argocd-apps/dev
-          - argocd-apps/prod
     steps:
-      - uses: actions/checkout@v4
-      - name: Build overlay
-        run: kubectl kustomize ${{ matrix.overlay }}
-
-  kubeconform:
-    name: Schema Validation
-    runs-on: ubuntu-latest
-    needs: kustomize-build
-    strategy:
-      matrix:
-        overlay:
-          - infrastructure/dev
-          - infrastructure/prod
-          - apps/dev
-          - apps/prod
-          - bootstrap/dev
-          - bootstrap/prod
-    steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install kubeconform
         run: |
           curl -sSL https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz \
             | tar xz -C /usr/local/bin
-      - name: Validate schemas
+      - name: Build and validate all overlays
         run: |
-          kubectl kustomize ${{ matrix.overlay }} | kubeconform \
-            -strict \
-            -summary \
-            -output text \
-            -skip CustomResourceDefinition \
-            -ignore-missing-schemas
+          for overlay in infrastructure/dev infrastructure/prod apps/dev apps/prod bootstrap/dev bootstrap/prod argocd-apps/dev argocd-apps/prod; do
+            echo "=== $overlay ==="
+            kubectl kustomize "$overlay" | kubeconform \
+              -strict \
+              -summary \
+              -output text \
+              -schema-location default \
+              -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
+              -skip CustomResourceDefinition
+          done
+
+  tofu-validate:
+    name: Tofu Validate
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install OpenTofu
+        uses: opentofu/setup-opentofu@v2
+      - name: Check formatting
+        run: tofu fmt -check -diff
+      - name: Initialize
+        run: tofu init -backend=false
+      - name: Validate
+        run: tofu validate
+

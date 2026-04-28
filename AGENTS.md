@@ -1,3 +1,11 @@
+<!--
+This source file is part of the Stanford Spezi open source project
+
+SPDX-FileCopyrightText: 2026 Stanford University and the project authors (see CONTRIBUTORS.md)
+
+SPDX-License-Identifier: MIT
+-->
+
 # AGENTS.md
 
 Guidance for AI coding assistants (Claude, ChatGPT, Gemini, etc.) contributing to this repository. Read this first so you can follow the conventions and tooling the rest of the team expects.
