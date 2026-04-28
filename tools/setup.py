@@ -46,12 +46,15 @@ def helm(*args: str, **kwargs) -> subprocess.CompletedProcess:
 
 
 def get_current_branch() -> str:
+    for var in ("GITHUB_HEAD_REF", "GITHUB_REF_NAME"):
+        val = os.environ.get(var, "").strip()
+        if val:
+            return val
     result = subprocess.run(
         ["git", "rev-parse", "--abbrev-ref", "HEAD"],
         capture_output=True, text=True, check=True, cwd=ROOT,
     )
-    branch = result.stdout.strip()
-    return branch if branch != "HEAD" else "main"
+    return result.stdout.strip()
 
 
 def branch_exists_on_remote(branch: str) -> bool:
