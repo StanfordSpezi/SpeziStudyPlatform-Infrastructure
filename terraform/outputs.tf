@@ -48,7 +48,7 @@ output "post_apply_instructions" {
 
     Post-apply checklist:
 
-    1. Get kubeconfig:
+    1. Get kubeconfig (run from terraform/):
        $(tofu output -raw get_credentials_command)
 
     2. Verify loadBalancerIP in argocd-apps/prod/traefik-values.yaml matches: ${google_compute_address.traefik.address}

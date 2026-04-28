@@ -33,6 +33,8 @@ resource "google_container_cluster" "primary" {
     channel = "REGULAR"
   }
 
+  datapath_provider = "ADVANCED_DATAPATH"
+
   private_cluster_config {
     enable_private_nodes    = true
     enable_private_endpoint = false
@@ -49,7 +51,7 @@ resource "google_container_cluster" "primary" {
     }
   }
 
-  deletion_protection = true
+  deletion_protection = false # TODO: disabled for cluster recreation
 
   depends_on = [google_project_service.apis]
 }
