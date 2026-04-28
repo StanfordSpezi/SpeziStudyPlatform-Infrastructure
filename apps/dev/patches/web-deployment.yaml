@@ -23,7 +23,7 @@ spec:
           effect: NoSchedule
       containers:
         - name: spezistudyplatform-web-container
-          image: ghcr.io/stanfordspezi/spezistudyplatform-web:pr-123
+          image: ghcr.io/stanfordspezi/spezistudyplatform-web:main
           resources:
             requests:
               memory: 64Mi

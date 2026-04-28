@@ -19,10 +19,10 @@ spec:
     spec:
       initContainers:
         - name: spezistudyplatform-server-migrate
-          image: ghcr.io/stanfordspezi/spezistudyplatform-server:pr-17
+          image: ghcr.io/stanfordspezi/spezistudyplatform-server:main
       containers:
         - name: spezistudyplatform-server-container
-          image: ghcr.io/stanfordspezi/spezistudyplatform-server:pr-17
+          image: ghcr.io/stanfordspezi/spezistudyplatform-server:main
           resources:
             requests:
               memory: 256Mi
