@@ -54,3 +54,11 @@ jobs:
           echo ""
           echo "=== Events ==="
           kubectl get events -A --sort-by='.lastTimestamp' | tail -40
+          echo ""
+          echo "=== Crashing Pod Logs ==="
+          for pod in $(kubectl get pods -n spezistudyplatform --no-headers | grep -E 'CrashLoop|Error' | awk '{print $1}'); do
+            for flag in "" "--previous"; do
+              echo "--- $pod $flag ---"
+              kubectl logs -n spezistudyplatform "$pod" --all-containers $flag --tail=40 2>&1 || true
+            done
+          done
