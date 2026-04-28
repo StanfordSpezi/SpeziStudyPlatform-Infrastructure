@@ -89,21 +89,25 @@ OVERLAYS := infrastructure/dev infrastructure/prod apps/dev apps/prod \
             bootstrap/dev bootstrap/prod argocd-apps/dev argocd-apps/prod
 
 validate: ## Validate all Kustomize overlays build cleanly
-	@for overlay in $(OVERLAYS); do \
+	@failed=0; \
+	for overlay in $(OVERLAYS); do \
 		echo "Building $$overlay..."; \
-		kubectl kustomize $$overlay > /dev/null; \
-	done
+		kubectl kustomize $$overlay > /dev/null || failed=1; \
+	done; \
+	if [ $$failed -ne 0 ]; then echo "Some overlays failed."; exit 1; fi
 	@echo "All overlays build successfully."
 
 lint: ## Run kubeconform schema validation (with CRD schemas) on all overlays
-	@for overlay in $(OVERLAYS); do \
+	@failed=0; \
+	for overlay in $(OVERLAYS); do \
 		echo "Validating $$overlay..."; \
 		kubectl kustomize $$overlay | kubeconform \
 			-strict -summary -output text \
 			-schema-location default \
 			-schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
-			-skip CustomResourceDefinition; \
-	done
+			-skip CustomResourceDefinition || failed=1; \
+	done; \
+	if [ $$failed -ne 0 ]; then exit 1; fi
 
 test: ## Run smoke test (requires running cluster from 'make dev')
 	bash tools/smoke-test.sh

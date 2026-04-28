@@ -49,7 +49,7 @@ resource "google_container_cluster" "primary" {
     }
   }
 
-  deletion_protection = false # Set to true after cluster is stable
+  deletion_protection = true
 
   depends_on = [google_project_service.apis]
 }

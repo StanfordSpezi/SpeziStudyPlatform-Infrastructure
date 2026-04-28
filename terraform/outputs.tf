@@ -54,10 +54,14 @@ output "post_apply_instructions" {
     2. Verify loadBalancerIP in argocd-apps/prod/traefik-values.yaml matches: ${google_compute_address.traefik.address}
        (commit and push before bootstrapping)
 
-    3. Add /etc/hosts entry:
-       ${google_compute_address.traefik.address} ${var.domain}
+    3. Configure DNS:
+       Create an A record pointing ${var.domain} to ${google_compute_address.traefik.address}
+       (For testing before DNS propagates, add to /etc/hosts: ${google_compute_address.traefik.address} ${var.domain})
 
-    4. Bootstrap ArgoCD:
+    4. Enable TLS (after DNS is live):
+       Re-enable tls-certificate.yaml and certificate patches in infrastructure/prod and bootstrap/prod kustomization.yaml
+
+    5. Bootstrap ArgoCD:
        make prod-bootstrap
   EOT
 }
